@@ -18,3 +18,22 @@ function openChart(stock) {
   const modal = new bootstrap.Modal(document.getElementById('chartModal'));
   modal.show();
 }
+function toggleDarkMode() {
+  document.body.classList.toggle('bg-dark');
+  document.body.classList.toggle('text-white');
+
+  document.querySelectorAll('.table').forEach(table => {
+    table.classList.toggle('table-dark');
+    table.classList.toggle('table-striped');
+  });
+
+  document.querySelectorAll('.card').forEach(card => {
+    card.classList.toggle('bg-dark');
+    card.classList.toggle('text-white');
+  });
+
+  document.querySelectorAll('button').forEach(btn => {
+    btn.classList.toggle('btn-light');
+    btn.classList.toggle('btn-dark');
+  });
+}
