@@ -5,4 +5,5 @@ kiteconnect==3.3.0
 PyYAML==6.0.1
 eventlet==0.33.3
 python-dotenv==1.0.1
+gunicorn==21.2.0
 
