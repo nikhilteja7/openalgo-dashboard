@@ -3,77 +3,150 @@
 <head>
   <title>OpenAlgo Dashboard</title>
   <style>
-    body { font-family: Arial; padding: 20px; background-color: #f9f9f9; }
-    h2 { margin-bottom: 10px; }
-    .section { margin-top: 30px; }
-    .btn { padding: 10px 15px; margin: 5px; border: none; background-color: #007BFF; color: white; cursor: pointer; border-radius: 4px; }
-    .btn.danger { background-color: #dc3545; }
-    .btn:hover { opacity: 0.9; }
-    .toggle { display: inline-flex; align-items: center; }
-    .toggle input { margin-right: 10px; }
+    body { font-family: Arial; margin: 0; padding: 0; background-color: #f5f5f5; }
+    header { background: #343a40; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    nav button { background: none; border: none; color: white; margin-right: 20px; font-size: 16px; cursor: pointer; }
+    nav button:hover { text-decoration: underline; }
+    .content { padding: 20px; }
+    .section { display: none; }
+    .active { display: block; }
+    .btn { padding: 8px 14px; margin: 8px 0; background: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    .btn:hover { background: #0056b3; }
+    .toggle { display: flex; align-items: center; margin-bottom: 15px; }
+    .toggle input { margin-right: 10px; transform: scale(1.5); }
+    input[type=text] { padding: 6px; width: 300px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <h1>📊 OpenAlgo Dashboard</h1>
+<header>
+  <nav>
+    <button onclick="showTab('orders')">📊 Orders</button>
+    <button onclick="showTab('zerodha')">🔐 Zerodha</button>
+    <button onclick="showTab('copy')">🔁 Copy Trade</button>
+    <button onclick="showTab('telegram')">📩 Telegram</button>
+  </nav>
+  <button class="btn" onclick="loginAll()">🔄 Login All</button>
+</header>
 
-  <!-- 🔀 COPY TRADING TOGGLE -->
-  <div class="section">
-    <h2>🔁 Copy Trading</h2>
+<div class="content">
+
+  <!-- ORDERS TAB -->
+  <div id="orders" class="section active">
+    <h2>📊 Orders Panel (Coming Soon...)</h2>
+    <p>Live orders and summary will appear here.</p>
+  </div>
+
+  <!-- ZERODHA LOGIN TAB -->
+  <div id="zerodha" class="section">
+    <h2>🔐 Login to Zerodha Accounts</h2>
+    <div id="loginButtons"></div>
+  </div>
+
+  <!-- COPY TRADE TOGGLE TAB -->
+  <div id="copy" class="section">
+    <h2>🔁 Copy Trading Settings</h2>
     <div class="toggle">
       <input type="checkbox" id="copyToggle">
       <label for="copyToggle">Enable Copy Trading to Child Accounts</label>
     </div>
+    <h3>👑 Promote Child to Master</h3>
+    <div id="childList"></div>
   </div>
 
-  <!-- 🔧 MAKE MASTER CONTROLS -->
-  <div class="section">
-    <h2>👑 Switch Master Account</h2>
-    <div id="childAccounts"></div>
+  <!-- TELEGRAM CONFIG TAB -->
+  <div id="telegram" class="section">
+    <h2>📩 Telegram Alert Settings</h2>
+    <label>Bot Token:</label><br>
+    <input type="text" id="bot_token" placeholder="123456:ABC-DEF1234ghIkl..."><br>
+    <label>Chat ID:</label><br>
+    <input type="text" id="chat_id" placeholder="-1001234567890"><br>
+    <button class="btn" onclick="saveTelegram()">💾 Save Telegram Config</button>
   </div>
 
-  <script>
-    // Fetch toggle status
-    fetch('/settings.yaml')
-      .then(res => res.text())
-      .then(text => {
-        const enabled = text.includes('copy_trading: true');
-        document.getElementById('copyToggle').checked = enabled;
+</div>
+
+<script>
+function showTab(tabId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+// Load child accounts
+function loadAccounts() {
+  fetch('/config.yaml')
+    .then(res => res.text())
+    .then(text => {
+      const names = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
+      const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
+      const master = masterMatch ? masterMatch[1] : "master";
+
+      const loginDiv = document.getElementById('loginButtons');
+      const childDiv = document.getElementById('childList');
+      loginDiv.innerHTML = ''; childDiv.innerHTML = '';
+
+      names.forEach(name => {
+        // Login button
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.textContent = `Login: ${name}`;
+        btn.onclick = () => window.open(`/zerodha-login/${name}`, '_blank');
+        loginDiv.appendChild(btn);
+
+        // Promote to Master
+        const mbtn = document.createElement('button');
+        mbtn.className = 'btn';
+        mbtn.textContent = `Make ${name} Master`;
+        mbtn.onclick = () => {
+          if (confirm(`Promote ${name} to Master?`)) {
+            fetch(`/make-master/${name}`, { method: 'POST' })
+              .then(r => r.text()).then(alert).then(loadAccounts);
+          }
+        };
+        childDiv.appendChild(mbtn);
       });
-
-    // Handle toggle switch
-    document.getElementById('copyToggle').addEventListener('change', function () {
-      const isEnabled = this.checked;
-      fetch('/toggle-copy-trading', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: isEnabled })
-      })
-        .then(res => res.json())
-        .then(data => alert(`Copy Trading is now: ${data.copy_trading ? "ENABLED" : "DISABLED"}`));
     });
+}
 
-    // Load child accounts and show Make Master buttons
-    fetch('/config.yaml')
-      .then(res => res.text())
-      .then(text => {
-        const names = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
-        const container = document.getElementById('childAccounts');
-        names.forEach(name => {
-          const btn = document.createElement('button');
-          btn.className = 'btn';
-          btn.textContent = `Make ${name} Master`;
-          btn.onclick = () => {
-            if (confirm(`Make ${name} the new master account?`)) {
-              fetch(`/make-master/${name}`, { method: 'POST' })
-                .then(res => res.text())
-                .then(msg => alert(msg));
-            }
-          };
-          container.appendChild(btn);
-        });
-      });
-  </script>
+// Copy toggle
+document.getElementById("copyToggle").addEventListener('change', function () {
+  fetch('/toggle-copy-trading', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: this.checked })
+  }).then(res => res.json()).then(data => alert("Copy Trading is now: " + (data.copy_trading ? "ON" : "OFF")));
+});
+
+// Load initial toggle state
+fetch('/settings.yaml')
+  .then(res => res.text())
+  .then(text => document.getElementById('copyToggle').checked = text.includes("copy_trading: true"));
+
+// Login All
+function loginAll() {
+  fetch('/config.yaml')
+    .then(res => res.text())
+    .then(text => {
+      const all = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
+      const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
+      if (masterMatch) all.push(masterMatch[1]);
+      all.forEach(name => window.open(`/zerodha-login/${name}`, '_blank'));
+    });
+}
+
+// Save Telegram
+function saveTelegram() {
+  const bot = document.getElementById('bot_token').value;
+  const chat = document.getElementById('chat_id').value;
+  fetch('/save-telegram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bot_token: bot, chat_id: chat })
+  }).then(res => res.text()).then(alert);
+}
+
+loadAccounts();
+</script>
 
 </body>
 </html>
