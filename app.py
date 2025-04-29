@@ -36,7 +36,9 @@ socketio = SocketIO(app)
 
 USERNAME = os.getenv("LOGIN_USER", "admin")
 PASSWORD = os.getenv("LOGIN_PASS", "secret123")
-print("Loaded Username:", USERNAME)
+print("ENV Username:", USERNAME)
+print("ENV Password:", PASSWORD)
+
 
 # --- Variables ---
 live_trades = []
@@ -118,14 +120,14 @@ def save_telegram_route():
 
 @app.route('/zerodha-login/<account>')
 def zerodha_login(account):
-    api_key = None
+    # Load updated creds every time in case config.yaml changed
+    with open("config.yaml", "r") as f:
+        creds = yaml.safe_load(f)
+
     if account == creds['master']['name']:
         api_key = creds['master']['api_key']
     else:
-        for child in creds['child_accounts']:
-            if child['name'] == account:
-                api_key = child['api_key']
-                break
+        api_key = next((child['api_key'] for child in creds['child_accounts'] if child['name'] == account), None)
 
     if not api_key:
         return "❌ Account not found", 404
