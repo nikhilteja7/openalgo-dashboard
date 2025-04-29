@@ -59,7 +59,26 @@ def chartink_webhook():
     total_pnl += pnl
 
     results = []
+    # --- 🔁 Master Account Order ---
+    try:
+        master = creds['master']
+        kite_master = KiteConnect(api_key=master['api_key'])
+        kite_master.set_access_token(master['access_token'])
 
+        master_order = kite_master.place_order(
+            tradingsymbol=stock,
+            exchange="NSE",
+            transaction_type=action.upper(),
+            quantity=qty,
+            order_type="MARKET",
+            product=variety,
+            variety="regular"
+        )
+
+        results.append(f"master ✅ Order {master_order}")
+
+    except Exception as e:
+        results.append(f"master ❌ Error: {str(e)}")
     # --- Copy Trading Section ---
     for child in creds['child_accounts']:
         try:
