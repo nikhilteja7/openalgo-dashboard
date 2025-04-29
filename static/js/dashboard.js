@@ -25,17 +25,18 @@ function toggleDarkMode() {
   body.classList.toggle('bg-dark');
   body.classList.toggle('text-white');
 
-  table.classList.toggle('table-dark');
+  if (table) {
+    table.classList.toggle('table-dark');
+  }
 
-  const cards = document.querySelectorAll('.card');
-  cards.forEach(card => {
+  document.querySelectorAll('.card').forEach(card => {
     card.classList.toggle('bg-dark');
     card.classList.toggle('text-white');
   });
 
-  const buttons = document.querySelectorAll('button');
-  buttons.forEach(btn => {
+  document.querySelectorAll('button').forEach(btn => {
     btn.classList.toggle('btn-light');
     btn.classList.toggle('btn-dark');
   });
 }
+
