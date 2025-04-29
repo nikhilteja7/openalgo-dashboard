@@ -3,6 +3,12 @@ from flask_socketio import SocketIO, emit
 import datetime
 from pytz import timezone
 import os
+from kiteconnect import KiteConnect
+import yaml
+
+#Load config.yaml to get child accounts
+with open("config.yaml", "r") as f:
+    creds = yaml.safe_load(f)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("APP_KEY", "supersecretkey")
@@ -37,7 +43,6 @@ def dashboard():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     return render_template('dashboard.html')
-
 @app.route('/chartink-webhook', methods=['POST'])
 def chartink_webhook():
     global total_orders, total_pnl
@@ -50,9 +55,33 @@ def chartink_webhook():
 
     now = datetime.datetime.now(timezone('Asia/Kolkata')).strftime("%H:%M:%S")
     total_orders += 1
-    pnl = qty * (ltp * 0.02 if action == "BUY" else -ltp * 0.01)
+    pnl = qty * (ltp * 0.02 if action.upper() == "BUY" else -ltp * 0.01)
     total_pnl += pnl
 
+    results = []
+
+    # --- Copy Trading Section ---
+    for child in creds['child_accounts']:
+        try:
+            kite = KiteConnect(api_key=child['api_key'])
+            kite.set_access_token(child['access_token'])
+
+            order_id = kite.place_order(
+                tradingsymbol=stock,
+                exchange="NSE",
+                transaction_type=action.upper(),
+                quantity=qty,
+                order_type="MARKET",
+                product=variety,
+                variety="regular"
+            )
+
+            results.append(f"{child['name']} ✅ Order {order_id}")
+
+        except Exception as e:
+            results.append(f"{child['name']} ❌ Error: {str(e)}")
+
+    # --- Emit WebSocket Update ---
     socketio.emit('new_order', {
         "time": now,
         "stock": stock,
@@ -66,7 +95,9 @@ def chartink_webhook():
         "pnl": total_pnl
     })
 
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "results": results}), 200
+
+
 
 @socketio.on('manual_order')
 def manual_order(data):
