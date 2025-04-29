@@ -4,7 +4,8 @@ import datetime
 from pytz import timezone
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.getenv("APP_KEY", "supersecretkey")
+
 socketio = SocketIO(app)
 
 import os
