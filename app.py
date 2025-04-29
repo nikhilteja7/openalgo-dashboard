@@ -7,8 +7,11 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 socketio = SocketIO(app)
 
-USERNAME = "admin"
-PASSWORD = "secret123"
+import os
+
+USERNAME = os.getenv("LOGIN_USER", "admin")
+PASSWORD = os.getenv("LOGIN_PASS", "secret123")
+
 
 live_trades = []
 total_orders = 0
