@@ -39,4 +39,36 @@ function toggleDarkMode() {
     btn.classList.toggle('btn-dark');
   });
 }
+<script>
+async function toggleCopyTrading(status) {
+  await fetch("/toggle-copy-trading", {
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ enabled: status })
+  });
+  alert("Copy Trading " + (status ? "Enabled" : "Disabled"));
+}
+
+async function makeNewMaster() {
+  const selected = document.getElementById("new-master").value;
+  await fetch(`/make-master/${selected}`, { method: "POST" });
+  alert(`✅ ${selected} is now Master. Reloading...`);
+  location.reload();
+}
+
+async function loadDropdown() {
+  const response = await fetch("/config.yaml");
+  const text = await response.text();
+  const config = jsyaml.load(text);
+  const dropdown = document.getElementById("new-master");
+
+  config.child_accounts.forEach(child => {
+    const option = document.createElement("option");
+    option.value = child.name;
+    option.innerText = child.name;
+    dropdown.appendChild(option);
+  });
+}
+window.onload = loadDropdown;
+</script>
 

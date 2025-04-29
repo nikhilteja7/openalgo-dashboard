@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+
   <meta charset="UTF-8">
   <title>OpenAlgo Dashboard</title>
   <style>
@@ -47,14 +48,20 @@
   <!-- COPY TRADE TOGGLE TAB -->
   <div id="copy" class="section">
     <h2>🔁 Copy Trading Settings</h2>
-    <div class="toggle">
-      <input type="checkbox" id="copyToggle">
-      <label for="copyToggle">Enable Copy Trading to Child Accounts</label>
-    </div>
+    <div>
+        <label for="copy-toggle">Copy Trading:</label>
+        <input type="checkbox" id="copy-toggle" onchange="toggleCopyTrading(this.checked)">
+      </div>
+      
     <h3>👑 Promote Child to Master</h3>
-    <div id="childList"></div>
-  </div>
-
+    <div>
+        <label for="new-master">Switch Master to:</label>
+        <select id="new-master">
+          <!-- Filled dynamically from config.yaml -->
+        </select>
+        <button onclick="makeNewMaster()">Set as Master</button>
+      </div>
+      
   <!-- TELEGRAM CONFIG TAB -->
   <div id="telegram" class="section">
     <h2>📩 Telegram Alert Settings</h2>
