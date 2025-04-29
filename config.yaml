@@ -1,7 +1,14 @@
 master:
   name: master
-  api_key: your_master_api_key
-  access_token: your_master_access_token
+  api_key: sa1t1c8gddb98915
+  access_token: H9r0loxwWCnVHkqASD2pVE5blGHpwOxe
+  api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
+  
+capital_per_trade: 30000
+stoploss_percent: 5
+target_percent: 10
+trail_sl_percent: 5
+
 
 child_accounts:
   - name: child1
@@ -11,3 +18,4 @@ child_accounts:
   - name: child2
     api_key: your_child2_api_key
     access_token: your_child2_access_token
+
