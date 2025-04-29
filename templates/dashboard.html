@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>OpenAlgo Dashboard</title>
   <style>
     body { font-family: Arial; margin: 0; padding: 0; background-color: #f5f5f5; }
@@ -93,7 +94,7 @@ function loadAccounts() {
         btn.onclick = () => window.open(`/zerodha-login/${name}`, '_blank');
         loginDiv.appendChild(btn);
 
-        // Promote to Master
+        // Promote to Master button
         const mbtn = document.createElement('button');
         mbtn.className = 'btn';
         mbtn.textContent = `Make ${name} Master`;

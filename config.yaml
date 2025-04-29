@@ -1,19 +1,13 @@
 master:
-  api_key: YOUR_MASTER_KEY
-  api_secret: YOUR_SECRET
-  access_token: MASTER_ACCESS
+  name: master
+  api_key: your_master_api_key
+  access_token: your_master_access_token
 
 child_accounts:
   - name: child1
-    api_key: API1
-    api_secret: SECRET1
-    access_token: TOKEN1
+    api_key: your_child1_api_key
+    access_token: your_child1_access_token
+
   - name: child2
-    api_key: API2
-    api_secret: SECRET2
-    access_token: TOKEN2
-  - name: child3
-    api_key: API3
-    api_secret: SECRET3
-    access_token: TOKEN3
-  # ... up to child10
+    api_key: your_child2_api_key
+    access_token: your_child2_access_token
