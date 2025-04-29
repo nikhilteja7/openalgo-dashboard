@@ -2,13 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_socketio import SocketIO, emit
 import datetime
 from pytz import timezone
+import os
 
 app = Flask(__name__)
 app.secret_key = os.getenv("APP_KEY", "supersecretkey")
-
 socketio = SocketIO(app)
 
-import os
+
 
 USERNAME = os.getenv("LOGIN_USER", "admin")
 PASSWORD = os.getenv("LOGIN_PASS", "secret123")
