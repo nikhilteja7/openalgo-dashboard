@@ -19,20 +19,22 @@ function openChart(stock) {
   modal.show();
 }
 function toggleDarkMode() {
-  document.body.classList.toggle('bg-dark');
-  document.body.classList.toggle('text-white');
+  const body = document.getElementById('body');
+  const table = document.getElementById('orders-table');
 
-  document.querySelectorAll('.table').forEach(table => {
-    table.classList.toggle('table-dark');
-    table.classList.toggle('table-striped');
-  });
+  body.classList.toggle('bg-dark');
+  body.classList.toggle('text-white');
 
-  document.querySelectorAll('.card').forEach(card => {
+  table.classList.toggle('table-dark');
+
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(card => {
     card.classList.toggle('bg-dark');
     card.classList.toggle('text-white');
   });
 
-  document.querySelectorAll('button').forEach(btn => {
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
     btn.classList.toggle('btn-light');
     btn.classList.toggle('btn-dark');
   });
