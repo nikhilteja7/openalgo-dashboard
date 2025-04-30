@@ -1,8 +1,8 @@
 master:
   name: master
-  api_key: your_master_api_key
-  access_token: your_master_access_token
-  api_secret: your_master_api_secret
+  access_token: H9r0loxwWCnVHkqASD2pVE5blGHpwOxe
+  api_key: sa1t1c8gddb98915
+  api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
   enabled: true
   multiplier: 1.0
 
