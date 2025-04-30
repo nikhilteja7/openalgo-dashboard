@@ -175,6 +175,24 @@
       if (statusBox) statusBox.textContent = `Last order at ${data.time}`;
     }
 
+    function updateCreds(name) {
+      const api_key = document.getElementById(`key-${name}`).value;
+      const api_secret = document.getElementById(`secret-${name}`).value;
+      const access_token = document.getElementById(`token-${name}`).value;
+      fetch(`/update-creds/${name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key, api_secret, access_token })
+      }).then(res => res.text()).then(alert);
+    }
+
+    function clearCreds(name) {
+      if (confirm(`Clear credentials for ${name}?`)) {
+        fetch(`/clear-creds/${name}`, { method: 'POST' })
+          .then(res => res.text()).then(alert);
+      }
+    }
+
     function loadAccounts() {
       fetch('/config.yaml')
         .then(res => res.text())
@@ -204,6 +222,13 @@
               <button class="btn" onclick="window.open('/zerodha-login/${name}', '_blank')">Login: ${name}</button>
               <label><input type="checkbox" onchange="toggleAccount('${name}', this.checked)" checked> Enabled</label>
               <div class="live-orders" id="status-${name}">-</div>
+              <div style="margin-top:10px;">
+                <input type="text" id="key-${name}" placeholder="API Key"><br>
+                <input type="text" id="secret-${name}" placeholder="API Secret"><br>
+                <input type="text" id="token-${name}" placeholder="Access Token"><br>
+                <button class="btn" onclick="updateCreds('${name}')">💾 Save</button>
+                <button class="btn" onclick="clearCreds('${name}')" style="background-color:#dc3545;">🗑️ Clear</button>
+              </div>
             `;
             loginDiv.appendChild(div);
             promote.innerHTML += `<option value="${name}">${name}</option>`;
