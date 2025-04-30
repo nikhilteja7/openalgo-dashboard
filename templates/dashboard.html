@@ -41,69 +41,11 @@
   </aside>
 
   <main>
-    <section id="copy" class="active">
-      <div class="status-box">
-        <h3><i class="fa-solid fa-repeat"></i> Copy Trading Settings</h3>
-        <label><input type="checkbox" id="copyToggle"> Enable Copy Trading</label><br><br>
-        <label>Promote Child to Master:</label><br>
-        <select id="new-master"></select><br><br>
-        <button class="btn" onclick="makeNewMaster()">Set as Master</button>
-        <button class="btn" onclick="undoMasterSwap()" style="margin-left: 10px; background-color: #6c757d;">Undo Master</button>
-      </div>
-    </section>
-
-    <section id="login">
+    <section id="login" class="active">
       <div class="status-box">
         <h3><i class="fa-solid fa-lock"></i> Login to Zerodha</h3>
         <div id="loginButtons"></div>
         <div id="accountStatus"></div>
-      </div>
-    </section>
-
-    <section id="orders">
-      <div class="status-box">
-        <h3><i class="fa-solid fa-chart-column"></i> Chartink Trigger Log</h3>
-        <p>Status: <span id="status">Waiting...</span></p>
-        <p>Alert: <span id="alert_name">-</span></p>
-        <div id="triggered_stocks"></div>
-        <div id="chart_preview"></div>
-        <a href="/download-log" class="btn" target="_blank"><i class="fa-solid fa-download"></i> Download Trigger Log</a>
-        <table>
-          <thead>
-            <tr>
-              <th>Account</th>
-              <th>Order ID</th>
-              <th>Status</th>
-              <th>P&L</th>
-            </tr>
-          </thead>
-          <tbody id="orderTable"></tbody>
-        </table>
-        <div style="margin-top: 20px; font-weight: bold;">Total P&L: ₹<span id="totalPnl">0.00</span></div>
-        <h4 style="margin-top: 30px;">📝 Manual Order</h4>
-        <label>Account:</label><br>
-        <select id="manualAccount"></select><br>
-        <label>Stock:</label><br>
-        <input type="text" id="manualStock" placeholder="RELIANCE"><br>
-        <label>Quantity:</label><br>
-        <input type="number" id="manualQty" value="1"><br>
-        <label>Side:</label><br>
-        <select id="manualSide">
-          <option value="BUY">BUY</option>
-          <option value="SELL">SELL</option>
-        </select><br><br>
-        <button class="btn" onclick="sendManualOrder()">🚀 Place Order</button>
-      </div>
-    </section>
-
-    <section id="telegram">
-      <div class="status-box">
-        <h3><i class="fa-solid fa-envelope"></i> Telegram Setup</h3>
-        <label>Bot Token:</label><br>
-        <input type="text" id="bot_token"><br>
-        <label>Chat ID:</label><br>
-        <input type="text" id="chat_id"><br>
-        <button class="btn" onclick="saveTelegram()">Save</button>
       </div>
     </section>
   </main>
@@ -118,26 +60,16 @@
       document.getElementById(id).classList.add('active');
     }
 
-    function makeNewMaster() {
-      const newMaster = document.getElementById("new-master").value;
-      if (!newMaster) return alert("Select a child account");
-      fetch(`/make-master/${newMaster}`, { method: 'POST' })
-        .then(r => r.text()).then(alert);
+    function confirmLogout() {
+      if (confirm("Are you sure you want to logout?")) {
+        window.location.href = "/logout";
+      }
     }
 
-    function undoMasterSwap() {
-      fetch(`/undo-master`, { method: 'POST' })
-        .then(r => r.text()).then(alert);
-    }
-
-    function saveTelegram() {
-      const bot = document.getElementById('bot_token').value;
-      const chat = document.getElementById('chat_id').value;
-      fetch('/save-telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bot_token: bot, chat_id: chat })
-      }).then(res => res.text()).then(alert);
+    function safeLogin(account) {
+      fetch('/health-check').then(() => {
+        window.open(`/zerodha-login/${account}`, '_blank');
+      });
     }
 
     function toggleAccount(account, isEnabled) {
@@ -146,33 +78,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: isEnabled })
       }).then(r => r.text()).then(alert);
-    }
-
-    function sendManualOrder() {
-      const data = {
-        stock: document.getElementById("manualStock").value.trim().toUpperCase(),
-        qty: document.getElementById("manualQty").value,
-        action: document.getElementById("manualSide").value,
-        account: document.getElementById("manualAccount").value
-      };
-      fetch("/manual-order", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(res => res.json()).then(res => alert("Manual Order: " + res.status));
-    }
-
-    function updatePnl(pnlValue) {
-      document.getElementById("totalPnl").textContent = parseFloat(pnlValue).toFixed(2);
-    }
-
-    function addOrderRow(data) {
-      const table = document.getElementById("orderTable");
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${data.account || "Master"}</td><td>${data.order_id || "-"}</td><td>${data.status || "Executed"}</td><td>${data.pnl ? '₹' + data.pnl.toFixed(2) : '-'}</td>`;
-      table.prepend(row);
-      const statusBox = document.getElementById(`status-${data.account}`);
-      if (statusBox) statusBox.textContent = `Last order at ${data.time}`;
     }
 
     function updateCreds(name) {
@@ -202,24 +107,28 @@
           const master = masterMatch ? masterMatch[1] : "master";
 
           const loginDiv = document.getElementById('loginButtons');
-          const promote = document.getElementById('new-master');
-          const manual = document.getElementById('manualAccount');
           loginDiv.innerHTML = '';
-          promote.innerHTML = '';
-          manual.innerHTML = '';
 
-          const masterBtn = document.createElement('button');
-          masterBtn.className = 'btn';
-          masterBtn.textContent = `Login: ${master}`;
-          masterBtn.onclick = () => window.open(`/zerodha-login/${master}`, '_blank');
+          const masterBtn = document.createElement('div');
+          masterBtn.className = 'account-row';
+          masterBtn.innerHTML = `
+            <button class="btn" onclick="safeLogin('${master}')">Login: ${master}</button>
+            <label><input type="checkbox" onchange="toggleAccount('${master}', this.checked)" checked> Enabled</label>
+            <div class="live-orders" id="status-${master}">-</div>
+            <div style="margin-top:10px;">
+              <input type="text" id="key-${master}" placeholder="API Key"><br>
+              <input type="text" id="secret-${master}" placeholder="API Secret"><br>
+              <input type="text" id="token-${master}" placeholder="Access Token"><br>
+              <button class="btn" onclick="updateCreds('${master}')">💾 Save</button>
+              <button class="btn" onclick="clearCreds('${master}')" style="background-color:#dc3545;">🗑️ Clear</button>
+            </div>`;
           loginDiv.appendChild(masterBtn);
-          manual.innerHTML += `<option value="${master}">${master} (master)</option>`;
 
           names.forEach(name => {
             const div = document.createElement('div');
             div.className = 'account-row';
             div.innerHTML = `
-              <button class="btn" onclick="window.open('/zerodha-login/${name}', '_blank')">Login: ${name}</button>
+              <button class="btn" onclick="safeLogin('${name}')">Login: ${name}</button>
               <label><input type="checkbox" onchange="toggleAccount('${name}', this.checked)" checked> Enabled</label>
               <div class="live-orders" id="status-${name}">-</div>
               <div style="margin-top:10px;">
@@ -231,16 +140,8 @@
               </div>
             `;
             loginDiv.appendChild(div);
-            promote.innerHTML += `<option value="${name}">${name}</option>`;
-            manual.innerHTML += `<option value="${name}">${name}</option>`;
           });
         });
-    }
-
-    function confirmLogout() {
-      if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "/logout";
-      }
     }
 
     loadAccounts();
