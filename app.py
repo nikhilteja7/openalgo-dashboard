@@ -197,21 +197,6 @@ Z_REDIRECT_URI = os.environ.get("Z_REDIRECT_URI", "https://openalgo-dashboard.on
 
 kite = KiteConnect(api_key=Z_API_KEY)
 
-@app.route('/login/<broker>')
-def login_broker(broker):
-    if not session.get('logged_in'):
-        return jsonify({"message": "Unauthorized"}), 401
-
-    if broker == "zerodha":
-        login_url = kite.login_url()
-        return jsonify({"message": "Redirecting to Zerodha login...", "url": login_url})
-    elif broker == "dhan":
-        return jsonify({"message": "Dhan login not yet implemented."})
-    elif broker == "upstox":
-        return jsonify({"message": "Upstox login not yet implemented."})
-    else:
-        return jsonify({"message": f"Broker '{broker}' not supported."}), 400
-
 @app.route('/login/zerodha/callback')
 def zerodha_callback():
     request_token = request.args.get("request_token")
