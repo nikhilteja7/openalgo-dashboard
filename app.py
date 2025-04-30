@@ -194,7 +194,6 @@ def health_check():
 Z_API_KEY = os.environ.get("sa1t1c8gddb98915")
 Z_API_SECRET = os.environ.get("oy3g5o1h84wlbrz77nmsrgcwrc9vphzh")
 Z_REDIRECT_URI = os.environ.get("Z_REDIRECT_URI", "https://openalgo-dashboard.onrender.com/login/zerodha/callback")
-")
 
 kite = KiteConnect(api_key=Z_API_KEY)
 
