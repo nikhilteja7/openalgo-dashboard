@@ -2,7 +2,7 @@ master:
   name: master
   api_key: sa1t1c8gddb98915
   api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
-  access_token: H9r0loxwWCnVHkqASD2pVE5blGHpwOxe
+  access_token: ''
   enabled: true
   multiplier: 1.0
 
