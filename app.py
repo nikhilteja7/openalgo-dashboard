@@ -233,6 +233,24 @@ def get_portfolio_summary():
 @app.route('/health-check')
 def health_check():
     return "✅ OK", 200
+@app.route('/add-account', methods=['POST'])
+def add_account():
+    data = request.json
+    creds = load_config()
+    new_account = {
+        "name": data.get("name"),
+        "api_key": data.get("api_key"),
+        "api_secret": data.get("api_secret"),
+        "access_token": data.get("access_token", ""),
+        "totp_key": data.get("totp_key", ""),
+        "email": data.get("email", ""),
+        "mobile": data.get("mobile", ""),
+        "multiplier": data.get("multiplier", 1),
+        "enabled": True
+    }
+    creds['child_accounts'].append(new_account)
+    save_config(creds)
+    return jsonify({"status": "success", "message": f"Account {new_account['name']} added."})
 
 
 # -------------------- Start App --------------------

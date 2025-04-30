@@ -48,90 +48,77 @@
       <li onclick="showTab('accounts')"><i class="fa-solid fa-user-plus"></i> Account Configuration</li>
       <li onclick="showTab('copy')"><i class="fa-solid fa-repeat"></i> Copy Trading</li>
       <li onclick="showTab('broker-login')"><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</li>
-      <li onclick="showTab('orders')"><i class="fa-solid fa-chart-column"></i> Orders</li>
+      <li onclick="showTab('manual-order')"><i class="fa-solid fa-bolt"></i> Manual Order</li>
+      <li onclick="showTab('auto-exit')"><i class="fa-solid fa-ban"></i> Auto Exit</li>
       <li onclick="showTab('telegram')"><i class="fa-solid fa-envelope"></i> Telegram</li>
       <li onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
     </ul>
   </aside>
-
   <main>
+    <!-- Account Configuration Section -->
     <section id="accounts" class="status-box active">
       <h3><i class="fa-solid fa-user-plus"></i> Add New Account</h3>
-
       <label>Select Account:</label><br>
       <select id="summaryAccountDropdown" onchange="fetchPortfolioSummary()">
         <option value="master">Master</option>
       </select><br><br>
-
-      <label>Portfolio Balance:</label><br>
-      <input type="text" id="portfolioBalance" readonly><br><br>
-
-      <label>Total Holdings Value:</label><br>
-      <input type="text" id="holdingsValue" readonly><br><br>
-
-      <label>Total P&L:</label><br>
-      <input type="text" id="totalPnL" readonly><br><br>
-
-      <label>Broker:</label><br><select><option>Zerodha</option></select><br>
-      <label>Client ID:</label><br><input type="text"><br>
-      <label>API Key:</label><br><input type="text"><br>
-      <label>Secret Key:</label><br><input type="text"><br>
-      <label>TOTP Key:</label><br><input type="text"><br>
-      <label>Email ID:</label><br><input type="text"><br>
-      <label>Mobile No:</label><br><input type="text"><br><br>
-      <button class="btn">Add Account</button>
-      <button class="btn" style="background:#6c757d;">Close</button>
-
-      <h4 style="margin-top:20px;">Existing Accounts</h4>
-      <div id="existingAccounts"></div>
+      <label>Portfolio Balance:</label><br><input type="text" id="portfolioBalance" readonly><br><br>
+      <label>Total Holdings Value:</label><br><input type="text" id="holdingsValue" readonly><br><br>
+      <label>Total P&L:</label><br><input type="text" id="totalPnL" readonly><br><br>
+      <label>Client ID:</label><br><input type="text" id="clientId"><br>
+      <label>API Key:</label><br><input type="text" id="apiKey"><br>
+      <label>Secret Key:</label><br><input type="text" id="secretKey"><br>
+      <label>TOTP Key:</label><br><input type="text" id="totpKey"><br>
+      <label>Email ID:</label><br><input type="text" id="emailId"><br>
+      <label>Mobile No:</label><br><input type="text" id="mobileNo"><br><br>
+      <button class="btn" onclick="addAccount()">Add Account</button>
     </section>
 
-    <section id="copy">
-      <div class="status-box">
-        <h3><i class="fa-solid fa-repeat"></i> Copy Trading Overview</h3>
-        <div style="margin-bottom: 20px;">
-          <label><input type="checkbox"> Enable Copy Trading</label>
-          <button class="btn">Turn On All Child</button>
-          <button class="btn">Exit in All Children</button>
-          <button class="btn">Change Master</button>
-          <button class="btn">Add Child</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Client ID</th>
-              <th>Auto Login</th>
-              <th>Live Balance</th>
-              <th>Quantity Multiplier</th>
-              <th>Trade on/off</th>
-              <th>Console</th>
-              <th>Exit</th>
-              <th>Last Order</th>
-              <th>Live PnL</th>
-              <th>Net Pos.</th>
-            </tr>
-          </thead>
-          <tbody id="accountTable"></tbody>
-        </table>
-      </div>
+    <!-- Copy Trading Section -->
+    <section id="copy" class="status-box">
+      <h3><i class="fa-solid fa-repeat"></i> Copy Trading Overview</h3>
+      <label><input type="checkbox"> Enable Copy Trading</label><br><br>
+      <button class="btn">Turn On All Child</button>
+      <button class="btn">Exit All Children</button>
+      <button class="btn">Change Master</button>
+      <button class="btn">Add Child</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Client ID</th><th>Auto Login</th><th>Live Balance</th><th>Multiplier</th>
+            <th>Trade</th><th>Console</th><th>Exit</th><th>Last Order</th><th>PnL</th><th>Net Pos.</th>
+          </tr>
+        </thead>
+        <tbody id="accountTable"></tbody>
+      </table>
     </section>
 
-    <section id="broker-login">
-      <div class="status-box">
-        <h3><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</h3>
-        <label>Select Account:</label><br>
-        <select id="accountSelect">
-          <option value="master">Master</option>
-        </select><br><br>
-        <label>Select Broker:</label><br>
-        <select id="brokerSelect">
-          <option value="zerodha">Zerodha</option>
-          <option value="dhan">Dhan (coming soon)</option>
-          <option value="upstox">Upstox (coming soon)</option>
-        </select><br><br>
-        <button class="btn" onclick="handleBrokerLogin()">Login</button>
-        <div id="loginStatus" class="live-orders"></div>
-      </div>
+    <!-- Manual Order Panel -->
+    <section id="manual-order" class="status-box">
+      <h3><i class="fa-solid fa-bolt"></i> Manual Order Panel</h3>
+      <label>Order Type:</label><br><select id="orderType"><option value="BUY">BUY</option><option value="SELL">SELL</option></select><br>
+      <label>Symbol:</label><br><input type="text" id="orderSymbol"><br>
+      <label>Quantity:</label><br><input type="number" id="orderQty"><br>
+      <label>Account:</label><br><select id="accountType"><option value="master">Master</option></select><br><br>
+      <button class="btn" onclick="submitManualOrder()">Submit Order</button>
+      <div class="live-orders" id="orderStatus"></div>
+    </section>
+
+    <!-- Auto Exit Section -->
+    <section id="auto-exit" class="status-box">
+      <h3><i class="fa-solid fa-ban"></i> Auto Exit</h3>
+      <button class="btn" onclick="triggerAutoExit('master')">Exit Master</button>
+      <button class="btn" onclick="triggerAutoExit('children')">Exit All Children</button>
+      <div class="live-orders" id="exitStatus"></div>
+    </section>
+
+    <!-- Broker Login Section -->
+    <section id="broker-login" class="status-box">
+      <h3><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</h3>
+      <label>Account:</label><br><select id="accountSelect"><option value="master">Master</option></select><br><br>
+      <label>Broker:</label><br><select id="brokerSelect"><option value="zerodha">Zerodha</option></select><br><br>
+      <button class="btn" onclick="handleBrokerLogin()">Login</button>
+      <div id="loginStatus" class="live-orders"></div>
     </section>
   </main>
 
@@ -146,26 +133,19 @@
     }
 
     function confirmLogout() {
-      if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "/logout";
-      }
+      if (confirm("Are you sure you want to logout?")) window.location.href = "/logout";
     }
 
     function handleBrokerLogin() {
       const broker = document.getElementById('brokerSelect').value;
       const account = document.getElementById('accountSelect').value;
       fetch(`/login/${broker}?account=${account}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-          if (data.url) {
-            document.getElementById('loginStatus').innerText = `Redirecting ${account} to ${broker} login...`;
-            window.open(data.url, '_blank');
-          } else {
-            document.getElementById('loginStatus').innerText = data.message || "Login failed";
-          }
-        })
-        .catch(err => {
-          document.getElementById('loginStatus').innerText = "Login request failed";
+          if (data.url) window.open(data.url, '_blank');
+          document.getElementById('loginStatus').innerText = data.message;
+        }).catch(() => {
+          document.getElementById('loginStatus').innerText = "Login Failed";
         });
     }
 
@@ -177,21 +157,49 @@
           document.getElementById("portfolioBalance").value = "₹ " + data.balance;
           document.getElementById("holdingsValue").value = "₹ " + data.holdings_value;
           document.getElementById("totalPnL").value = "₹ " + data.total_pnl;
-        })
-        .catch(err => {
-          document.getElementById("portfolioBalance").value = "Unavailable";
-          document.getElementById("holdingsValue").value = "Unavailable";
-          document.getElementById("totalPnL").value = "Unavailable";
         });
     }
 
-    function showToast(message) {
-      var x = document.getElementById("toast");
-      x.innerText = message;
-      x.style.visibility = "visible";
-      setTimeout(function () {
-        x.style.visibility = "hidden";
-      }, 3000);
+    function addAccount() {
+      fetch('/add-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById("clientId").value,
+          api_key: document.getElementById("apiKey").value,
+          api_secret: document.getElementById("secretKey").value,
+          totp_key: document.getElementById("totpKey").value,
+          email: document.getElementById("emailId").value,
+          mobile: document.getElementById("mobileNo").value
+        })
+      }).then(res => res.json())
+        .then(data => { alert(data.message || "Added"); location.reload(); })
+        .catch(() => alert("Failed to add account"));
+    }
+
+    function submitManualOrder() {
+      const data = {
+        symbol: document.getElementById('orderSymbol').value,
+        qty: parseInt(document.getElementById('orderQty').value),
+        side: document.getElementById('orderType').value,
+        account: document.getElementById('accountType').value
+      };
+      fetch('/manual-order', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      }).then(r => r.json()).then(d => {
+        document.getElementById('orderStatus').innerText = d.message || "Order Placed";
+      }).catch(() => {
+        document.getElementById('orderStatus').innerText = "Order Failed";
+      });
+    }
+
+    function triggerAutoExit(scope) {
+      fetch(`/auto-exit?scope=${scope}`)
+        .then(res => res.json())
+        .then(data => { document.getElementById('exitStatus').innerText = data.message; })
+        .catch(() => { document.getElementById('exitStatus').innerText = "Exit Failed"; });
     }
 
     window.onload = function () {
@@ -202,21 +210,21 @@
         .then(data => {
           const brokerDropdown = document.getElementById('accountSelect');
           const summaryDropdown = document.getElementById('summaryAccountDropdown');
+          const orderDropdown = document.getElementById('accountType');
           data.child_accounts.forEach(child => {
-            const opt1 = document.createElement("option");
-            opt1.value = child;
-            opt1.textContent = child;
-            brokerDropdown.appendChild(opt1);
-            const opt2 = document.createElement("option");
-            opt2.value = child;
-            opt2.textContent = child;
-            summaryDropdown.appendChild(opt2);
+            [brokerDropdown, summaryDropdown, orderDropdown].forEach(drop => {
+              const opt = document.createElement("option");
+              opt.value = child; opt.textContent = child;
+              drop.appendChild(opt);
+            });
           });
         });
 
       const params = new URLSearchParams(window.location.search);
       if (params.get("login") === "success" && params.get("account")) {
-        showToast("Login successful for " + params.get("account"));
+        document.getElementById("toast").innerText = "Login successful for " + params.get("account");
+        document.getElementById("toast").style.visibility = "visible";
+        setTimeout(() => { document.getElementById("toast").style.visibility = "hidden"; }, 3000);
       }
     };
   </script>
