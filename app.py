@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file
 from flask_socketio import SocketIO, emit
 import os
-yaml
+import yaml
 import datetime
 from pytz import timezone
 from kiteconnect import KiteConnect
