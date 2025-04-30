@@ -19,21 +19,35 @@
     .status-box h3 { margin-top: 0; }
     .btn { background: #007BFF; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
     .btn:hover { background: #0056b3; }
-    .account-row { margin-top: 10px; }
     select, input { margin-top: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
     th { background-color: #007BFF; color: white; }
-    iframe { border: none; margin-top: 10px; }
     .live-orders { font-size: 14px; margin-top: 5px; color: #555; }
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #28a745;
+      color: #fff;
+      text-align: center;
+      border-radius: 5px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 17px;
+    }
   </style>
 </head>
 <body>
   <aside>
     <h2>OpenAlgo</h2>
     <ul>
+      <li onclick="showTab('accounts')"><i class="fa-solid fa-user-plus"></i> Account Configuration</li>
       <li onclick="showTab('copy')"><i class="fa-solid fa-repeat"></i> Copy Trading</li>
-      <li onclick="showTab('login')"><i class="fa-solid fa-lock"></i> Zerodha Login</li>
+      <li onclick="showTab('broker-login')"><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</li>
       <li onclick="showTab('orders')"><i class="fa-solid fa-chart-column"></i> Orders</li>
       <li onclick="showTab('telegram')"><i class="fa-solid fa-envelope"></i> Telegram</li>
       <li onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
@@ -41,19 +55,90 @@
   </aside>
 
   <main>
-    <section id="login" class="active">
+    <section id="accounts" class="status-box active">
+      <h3><i class="fa-solid fa-user-plus"></i> Add New Account</h3>
+
+      <label>Select Account:</label><br>
+      <select id="summaryAccountDropdown" onchange="fetchPortfolioSummary()">
+        <option value="master">Master</option>
+      </select><br><br>
+
+      <label>Portfolio Balance:</label><br>
+      <input type="text" id="portfolioBalance" readonly><br><br>
+
+      <label>Total Holdings Value:</label><br>
+      <input type="text" id="holdingsValue" readonly><br><br>
+
+      <label>Total P&L:</label><br>
+      <input type="text" id="totalPnL" readonly><br><br>
+
+      <label>Broker:</label><br><select><option>Zerodha</option></select><br>
+      <label>Client ID:</label><br><input type="text"><br>
+      <label>API Key:</label><br><input type="text"><br>
+      <label>Secret Key:</label><br><input type="text"><br>
+      <label>TOTP Key:</label><br><input type="text"><br>
+      <label>Email ID:</label><br><input type="text"><br>
+      <label>Mobile No:</label><br><input type="text"><br><br>
+      <button class="btn">Add Account</button>
+      <button class="btn" style="background:#6c757d;">Close</button>
+
+      <h4 style="margin-top:20px;">Existing Accounts</h4>
+      <div id="existingAccounts"></div>
+    </section>
+
+    <section id="copy">
       <div class="status-box">
-        <h3><i class="fa-solid fa-lock"></i> Login to Zerodha</h3>
-        <div id="loginButtons"></div>
-        <div id="accountStatus"></div>
+        <h3><i class="fa-solid fa-repeat"></i> Copy Trading Overview</h3>
+        <div style="margin-bottom: 20px;">
+          <label><input type="checkbox"> Enable Copy Trading</label>
+          <button class="btn">Turn On All Child</button>
+          <button class="btn">Exit in All Children</button>
+          <button class="btn">Change Master</button>
+          <button class="btn">Add Child</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Client ID</th>
+              <th>Auto Login</th>
+              <th>Live Balance</th>
+              <th>Quantity Multiplier</th>
+              <th>Trade on/off</th>
+              <th>Console</th>
+              <th>Exit</th>
+              <th>Last Order</th>
+              <th>Live PnL</th>
+              <th>Net Pos.</th>
+            </tr>
+          </thead>
+          <tbody id="accountTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="broker-login">
+      <div class="status-box">
+        <h3><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</h3>
+        <label>Select Account:</label><br>
+        <select id="accountSelect">
+          <option value="master">Master</option>
+        </select><br><br>
+        <label>Select Broker:</label><br>
+        <select id="brokerSelect">
+          <option value="zerodha">Zerodha</option>
+          <option value="dhan">Dhan (coming soon)</option>
+          <option value="upstox">Upstox (coming soon)</option>
+        </select><br><br>
+        <button class="btn" onclick="handleBrokerLogin()">Login</button>
+        <div id="loginStatus" class="live-orders"></div>
       </div>
     </section>
   </main>
 
+  <div id="toast">Login successful!</div>
+
   <script>
     const socket = io();
-    socket.on("update_pnl", (data) => updatePnl(data.pnl));
-    socket.on("new_order", (data) => addOrderRow(data));
 
     function showTab(id) {
       document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
@@ -66,85 +151,74 @@
       }
     }
 
-    function safeLogin(account) {
-      fetch('/health-check').then(() => {
-        window.open(`/zerodha-login/${account}`, '_blank');
-      });
-    }
-
-    function toggleAccount(account, isEnabled) {
-      fetch(`/toggle-account/${account}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: isEnabled })
-      }).then(r => r.text()).then(alert);
-    }
-
-    function updateCreds(name) {
-      const api_key = document.getElementById(`key-${name}`).value;
-      const api_secret = document.getElementById(`secret-${name}`).value;
-      const access_token = document.getElementById(`token-${name}`).value;
-      fetch(`/update-creds/${name}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key, api_secret, access_token })
-      }).then(res => res.text()).then(alert);
-    }
-
-    function clearCreds(name) {
-      if (confirm(`Clear credentials for ${name}?`)) {
-        fetch(`/clear-creds/${name}`, { method: 'POST' })
-          .then(res => res.text()).then(alert);
-      }
-    }
-
-    function loadAccounts() {
-      fetch('/config.yaml')
-        .then(res => res.text())
-        .then(text => {
-          const names = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
-          const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
-          const master = masterMatch ? masterMatch[1] : "master";
-
-          const loginDiv = document.getElementById('loginButtons');
-          loginDiv.innerHTML = '';
-
-          const masterBtn = document.createElement('div');
-          masterBtn.className = 'account-row';
-          masterBtn.innerHTML = `
-            <button class="btn" onclick="safeLogin('${master}')">Login: ${master}</button>
-            <label><input type="checkbox" onchange="toggleAccount('${master}', this.checked)" checked> Enabled</label>
-            <div class="live-orders" id="status-${master}">-</div>
-            <div style="margin-top:10px;">
-              <input type="text" id="key-${master}" placeholder="API Key"><br>
-              <input type="text" id="secret-${master}" placeholder="API Secret"><br>
-              <input type="text" id="token-${master}" placeholder="Access Token"><br>
-              <button class="btn" onclick="updateCreds('${master}')">💾 Save</button>
-              <button class="btn" onclick="clearCreds('${master}')" style="background-color:#dc3545;">🗑️ Clear</button>
-            </div>`;
-          loginDiv.appendChild(masterBtn);
-
-          names.forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'account-row';
-            div.innerHTML = `
-              <button class="btn" onclick="safeLogin('${name}')">Login: ${name}</button>
-              <label><input type="checkbox" onchange="toggleAccount('${name}', this.checked)" checked> Enabled</label>
-              <div class="live-orders" id="status-${name}">-</div>
-              <div style="margin-top:10px;">
-                <input type="text" id="key-${name}" placeholder="API Key"><br>
-                <input type="text" id="secret-${name}" placeholder="API Secret"><br>
-                <input type="text" id="token-${name}" placeholder="Access Token"><br>
-                <button class="btn" onclick="updateCreds('${name}')">💾 Save</button>
-                <button class="btn" onclick="clearCreds('${name}')" style="background-color:#dc3545;">🗑️ Clear</button>
-              </div>
-            `;
-            loginDiv.appendChild(div);
-          });
+    function handleBrokerLogin() {
+      const broker = document.getElementById('brokerSelect').value;
+      const account = document.getElementById('accountSelect').value;
+      fetch(`/login/${broker}?account=${account}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.url) {
+            document.getElementById('loginStatus').innerText = `Redirecting ${account} to ${broker} login...`;
+            window.open(data.url, '_blank');
+          } else {
+            document.getElementById('loginStatus').innerText = data.message || "Login failed";
+          }
+        })
+        .catch(err => {
+          document.getElementById('loginStatus').innerText = "Login request failed";
         });
     }
 
-    loadAccounts();
+    function fetchPortfolioSummary() {
+      const acc = document.getElementById("summaryAccountDropdown")?.value || "master";
+      fetch("/get-portfolio-summary?account=" + acc)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("portfolioBalance").value = "₹ " + data.balance;
+          document.getElementById("holdingsValue").value = "₹ " + data.holdings_value;
+          document.getElementById("totalPnL").value = "₹ " + data.total_pnl;
+        })
+        .catch(err => {
+          document.getElementById("portfolioBalance").value = "Unavailable";
+          document.getElementById("holdingsValue").value = "Unavailable";
+          document.getElementById("totalPnL").value = "Unavailable";
+        });
+    }
+
+    function showToast(message) {
+      var x = document.getElementById("toast");
+      x.innerText = message;
+      x.style.visibility = "visible";
+      setTimeout(function () {
+        x.style.visibility = "hidden";
+      }, 3000);
+    }
+
+    window.onload = function () {
+      showTab("accounts");
+      fetchPortfolioSummary();
+      fetch('/get-accounts')
+        .then(res => res.json())
+        .then(data => {
+          const brokerDropdown = document.getElementById('accountSelect');
+          const summaryDropdown = document.getElementById('summaryAccountDropdown');
+          data.child_accounts.forEach(child => {
+            const opt1 = document.createElement("option");
+            opt1.value = child;
+            opt1.textContent = child;
+            brokerDropdown.appendChild(opt1);
+            const opt2 = document.createElement("option");
+            opt2.value = child;
+            opt2.textContent = child;
+            summaryDropdown.appendChild(opt2);
+          });
+        });
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("login") === "success" && params.get("account")) {
+        showToast("Login successful for " + params.get("account"));
+      }
+    };
   </script>
 </body>
 </html>
