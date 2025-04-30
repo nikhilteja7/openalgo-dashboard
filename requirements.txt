@@ -7,3 +7,4 @@ eventlet==0.33.3
 python-dotenv==1.0.1
 gunicorn==21.2.0
 pytz==2023.3
+apscheduler==3.10.4
