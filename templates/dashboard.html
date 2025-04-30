@@ -3,166 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <title>OpenAlgo Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <style>
-    body { font-family: Arial; margin: 0; padding: 0; background-color: #f5f5f5; }
-    header { background: #343a40; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-    nav button { background: none; border: none; color: white; margin-right: 20px; font-size: 16px; cursor: pointer; }
-    nav button:hover { text-decoration: underline; }
-    .content { padding: 20px; }
-    .section { display: none; }
-    .active { display: block; }
-    .btn { padding: 8px 14px; margin: 8px 0; background: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    body { display: flex; margin: 0; font-family: Arial; background-color: #f0f2f5; }
+    aside { width: 220px; background-color: #1c1c1c; color: white; height: 100vh; padding-top: 20px; position: fixed; }
+    aside h2 { text-align: center; color: #61dafb; }
+    aside ul { list-style: none; padding: 0; }
+    aside li { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #444; }
+    aside li:hover { background-color: #333; }
+    main { margin-left: 220px; padding: 20px; flex-grow: 1; }
+    section { display: none; }
+    section.active { display: block; }
+    .status-box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .status-box h3 { margin-top: 0; }
+    .btn { background: #007BFF; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
     .btn:hover { background: #0056b3; }
-    .toggle input { margin-right: 10px; transform: scale(1.5); }
-    input[type=text] { padding: 6px; width: 300px; margin-bottom: 10px; }
+    .account-row { margin-top: 10px; }
+    select, input { margin-top: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #007BFF; color: white; }
+    iframe { border: none; margin-top: 10px; }
+    .live-orders { font-size: 14px; margin-top: 5px; color: #555; }
   </style>
 </head>
 <body>
+  <aside>
+    <h2>OpenAlgo</h2>
+    <ul>
+      <li onclick="showTab('copy')"><i class="fa-solid fa-repeat"></i> Copy Trading</li>
+      <li onclick="showTab('login')"><i class="fa-solid fa-lock"></i> Zerodha Login</li>
+      <li onclick="showTab('orders')"><i class="fa-solid fa-chart-column"></i> Orders</li>
+      <li onclick="showTab('telegram')"><i class="fa-solid fa-envelope"></i> Telegram</li>
+    </ul>
+  </aside>
 
-<header>
-  <nav>
-    <button onclick="showTab('orders')">📊 Orders</button>
-    <button onclick="showTab('zerodha')">🔐 Zerodha</button>
-    <button onclick="showTab('copy')">🔁 Copy Trade</button>
-    <button onclick="showTab('telegram')">📩 Telegram</button>
-  </nav>
-  <button class="btn" onclick="loginAll()">🔄 Login All</button>
-</header>
+  <main>
+    <section id="copy" class="active">
+      <div class="status-box">
+        <h3><i class="fa-solid fa-repeat"></i> Copy Trading Settings</h3>
+        <label><input type="checkbox" id="copyToggle"> Enable Copy Trading</label><br><br>
+        <label>Promote Child to Master:</label><br>
+        <select id="new-master"></select><br><br>
+        <button class="btn" onclick="makeNewMaster()">Set as Master</button>
+        <button class="btn" onclick="undoMasterSwap()" style="margin-left: 10px; background-color: #6c757d;">Undo Master</button>
+      </div>
+    </section>
 
-<div class="content">
+    <section id="login">
+      <div class="status-box">
+        <h3><i class="fa-solid fa-lock"></i> Login to Zerodha</h3>
+        <div id="loginButtons"></div>
+        <div id="accountStatus"></div>
+      </div>
+    </section>
 
-  <!-- ORDERS TAB -->
-  <div id="orders" class="section active">
-    <h2>📊 Orders Panel (Coming Soon...)</h2>
-    <p>Live orders and summary will appear here.</p>
-  </div>
+    <section id="orders">
+      <div class="status-box">
+        <h3><i class="fa-solid fa-chart-column"></i> Chartink Trigger Log</h3>
+        <p>Status: <span id="status">Waiting...</span></p>
+        <p>Alert: <span id="alert_name">-</span></p>
+        <div id="triggered_stocks"></div>
+        <div id="chart_preview"></div>
+        <a href="/download-log" class="btn" target="_blank"><i class="fa-solid fa-download"></i> Download Trigger Log</a>
+        <table>
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Order ID</th>
+              <th>Status</th>
+              <th>P&L</th>
+            </tr>
+          </thead>
+          <tbody id="orderTable"></tbody>
+        </table>
+        <div style="margin-top: 20px; font-weight: bold;">Total P&L: ₹<span id="totalPnl">0.00</span></div>
+        <h4 style="margin-top: 30px;">📝 Manual Order</h4>
+        <label>Account:</label><br>
+        <select id="manualAccount"></select><br>
+        <label>Stock:</label><br>
+        <input type="text" id="manualStock" placeholder="RELIANCE"><br>
+        <label>Quantity:</label><br>
+        <input type="number" id="manualQty" value="1"><br>
+        <label>Side:</label><br>
+        <select id="manualSide">
+          <option value="BUY">BUY</option>
+          <option value="SELL">SELL</option>
+        </select><br><br>
+        <button class="btn" onclick="sendManualOrder()">🚀 Place Order</button>
+      </div>
+    </section>
 
-  <!-- ZERODHA LOGIN TAB -->
-  <div id="zerodha" class="section">
-    <h2>🔐 Login to Zerodha Accounts</h2>
-    <div id="loginButtons"></div>
-    <select id="accountSelector">
-      <option value="">-- Select Account --</option>
-    </select>
-    <button onclick="loginSelectedAccount()">Login</button>
-  </div>
+    <section id="telegram">
+      <div class="status-box">
+        <h3><i class="fa-solid fa-envelope"></i> Telegram Setup</h3>
+        <label>Bot Token:</label><br>
+        <input type="text" id="bot_token"><br>
+        <label>Chat ID:</label><br>
+        <input type="text" id="chat_id"><br>
+        <button class="btn" onclick="saveTelegram()">Save</button>
+      </div>
+    </section>
+  </main>
 
-  <!-- COPY TRADE TAB -->
-  <div id="copy" class="section">
-    <h2>🔁 Copy Trading Settings</h2>
-    <div class="toggle">
-      <label for="copyToggle">Enable Copy Trading:</label>
-      <input type="checkbox" id="copyToggle">
-    </div>
+  <script>
+    const socket = io();
+    socket.on("update_pnl", (data) => updatePnl(data.pnl));
+    socket.on("new_order", (data) => addOrderRow(data));
 
-    <h3>👑 Promote Child to Master</h3>
-    <div>
-      <label for="new-master">Switch Master to:</label>
-      <select id="new-master"></select>
-      <button onclick="makeNewMaster()">Set as Master</button>
-    </div>
-    <div id="childList"></div>
-  </div>
+    function showTab(id) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
 
-  <!-- TELEGRAM TAB -->
-  <div id="telegram" class="section">
-    <h2>📩 Telegram Alert Settings</h2>
-    <label>Bot Token:</label><br>
-    <input type="text" id="bot_token" placeholder="123456:ABC-DEF1234ghIkl..."><br>
-    <label>Chat ID:</label><br>
-    <input type="text" id="chat_id" placeholder="-1001234567890"><br>
-    <button class="btn" onclick="saveTelegram()">💾 Save Telegram Config</button>
-  </div>
+    function makeNewMaster() {
+      const newMaster = document.getElementById("new-master").value;
+      if (!newMaster) return alert("Select a child account");
+      fetch(`/make-master/${newMaster}`, { method: 'POST' })
+        .then(r => r.text())
+        .then(alert);
+    }
 
-</div>
+    function undoMasterSwap() {
+      fetch(`/undo-master`, { method: 'POST' })
+        .then(r => r.text())
+        .then(alert);
+    }
 
-<script>
-function showTab(tabId) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-}
+    function saveTelegram() {
+      const bot = document.getElementById('bot_token').value;
+      const chat = document.getElementById('chat_id').value;
+      fetch('/save-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bot_token: bot, chat_id: chat })
+      }).then(res => res.text()).then(alert);
+    }
 
-function loadAccounts() {
-  fetch('/config.yaml')
-    .then(res => res.text())
-    .then(text => {
-      const names = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
-      const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
-      const master = masterMatch ? masterMatch[1] : "master";
+    function toggleAccount(account, isEnabled) {
+      fetch(`/toggle-account/${account}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: isEnabled })
+      }).then(r => r.text()).then(alert);
+    }
 
-      const loginDiv = document.getElementById('loginButtons');
-      const selector = document.getElementById('accountSelector');
-      const promote = document.getElementById('new-master');
-      loginDiv.innerHTML = '';
-      selector.innerHTML = `<option value="${master}">Master: ${master}</option>`;
-      promote.innerHTML = '';
+    function sendManualOrder() {
+      const data = {
+        stock: document.getElementById("manualStock").value.trim().toUpperCase(),
+        qty: document.getElementById("manualQty").value,
+        action: document.getElementById("manualSide").value,
+        account: document.getElementById("manualAccount").value
+      };
+      fetch("/manual-order", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()).then(res => alert("Manual Order: " + res.status));
+    }
 
-      names.forEach(name => {
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.textContent = `Login: ${name}`;
-        btn.onclick = () => window.open(`/zerodha-login/${name}`, '_blank');
-        loginDiv.appendChild(btn);
+    function updatePnl(pnlValue) {
+      document.getElementById("totalPnl").textContent = parseFloat(pnlValue).toFixed(2);
+    }
 
-        selector.innerHTML += `<option value="${name}">Child: ${name}</option>`;
-        promote.innerHTML += `<option value="${name}">${name}</option>`;
-      });
-    });
-}
+    function addOrderRow(data) {
+      const table = document.getElementById("orderTable");
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${data.account || "Master"}</td><td>${data.order_id || "-"}</td><td>${data.status || "Executed"}</td><td>${data.pnl ? '₹' + data.pnl.toFixed(2) : '-'}</td>`;
+      table.prepend(row);
+      
+      // Optional: live status under login tab
+      const statusBox = document.getElementById(`status-${data.account}`);
+      if (statusBox) statusBox.textContent = `Last order at ${data.time}`;
+    }
 
-function loginSelectedAccount() {
-  const account = document.getElementById("accountSelector").value;
-  if (account) window.location.href = `/zerodha-login/${account}`;
-}
+    function loadAccounts() {
+      fetch('/config.yaml')
+        .then(res => res.text())
+        .then(text => {
+          const names = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
+          const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
+          const master = masterMatch ? masterMatch[1] : "master";
 
-function toggleCopyTrading(state) {
-  fetch('/toggle-copy-trading', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled: state })
-  }).then(res => res.json()).then(data => alert("Copy Trading is now: " + (data.copy_trading ? "ON" : "OFF")));
-}
+          const loginDiv = document.getElementById('loginButtons');
+          const promote = document.getElementById('new-master');
+          const manual = document.getElementById('manualAccount');
+          loginDiv.innerHTML = '';
+          promote.innerHTML = '';
+          manual.innerHTML = '';
 
-document.getElementById("copyToggle").addEventListener('change', function () {
-  toggleCopyTrading(this.checked);
-});
+          const masterBtn = document.createElement('button');
+          masterBtn.className = 'btn';
+          masterBtn.textContent = `Login: ${master}`;
+          masterBtn.onclick = () => window.open(`/zerodha-login/${master}`, '_blank');
+          loginDiv.appendChild(masterBtn);
+          manual.innerHTML += `<option value="${master}">${master} (master)</option>`;
 
-fetch('/settings.yaml')
-  .then(res => res.text())
-  .then(text => document.getElementById('copyToggle').checked = text.includes("copy_trading: true"));
+          names.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'account-row';
+            div.innerHTML = `
+              <button class="btn" onclick="window.open('/zerodha-login/${name}', '_blank')">Login: ${name}</button>
+              <label><input type="checkbox" onchange="toggleAccount('${name}', this.checked)" checked> Enabled</label>
+              <div class="live-orders" id="status-${name}">-</div>
+            `;
+            loginDiv.appendChild(div);
+            promote.innerHTML += `<option value="${name}">${name}</option>`;
+            manual.innerHTML += `<option value="${name}">${name}</option>`;
+          });
+        });
+    }
 
-function loginAll() {
-  fetch('/config.yaml')
-    .then(res => res.text())
-    .then(text => {
-      const all = [...text.matchAll(/- name: (\w+)/g)].map(m => m[1]);
-      const masterMatch = text.match(/master:\s*\n\s*name:\s*(\w+)/);
-      if (masterMatch) all.push(masterMatch[1]);
-      all.forEach(name => window.open(`/zerodha-login/${name}`, '_blank'));
-    });
-}
-
-function saveTelegram() {
-  const bot = document.getElementById('bot_token').value;
-  const chat = document.getElementById('chat_id').value;
-  fetch('/save-telegram', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bot_token: bot, chat_id: chat })
-  }).then(res => res.text()).then(alert);
-}
-
-function makeNewMaster() {
-  const newMaster = document.getElementById("new-master").value;
-  if (!newMaster) return alert("❗ Select a child account");
-  fetch(`/make-master/${newMaster}`, { method: 'POST' })
-    .then(r => r.text())
-    .then(alert)
-    .then(loadAccounts);
-}
-
-loadAccounts();
-</script>
+    loadAccounts();
+  </script>
 </body>
 </html>
