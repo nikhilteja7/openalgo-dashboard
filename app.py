@@ -169,5 +169,41 @@ def refresh_session():
     result = refresh_tokens_from_totp()
     return jsonify(result)
 
+# ------------------- ✅ Kite Login Flow via Request Token -------------------
+
+@app.route("/login-kite/<client_id>")
+def login_kite(client_id):
+    config = load_config()
+    all_accounts = [config["master"]] + config["child_accounts"]
+    acc = next((a for a in all_accounts if a["name"] == client_id), None)
+    if not acc:
+        return "Account not found", 404
+
+    kite = KiteConnect(api_key=acc["api_key"])
+    login_url = kite.login_url()
+    session["client_id"] = client_id
+    return redirect(login_url)
+
+@app.route("/kite/callback")
+def kite_callback():
+    request_token = request.args.get("request_token")
+    client_id = session.get("client_id")
+    if not request_token or not client_id:
+        return "Invalid session", 400
+
+    config = load_config()
+    all_accounts = [config["master"]] + config["child_accounts"]
+    acc = next((a for a in all_accounts if a["name"] == client_id), None)
+    if not acc:
+        return "Account not found", 404
+
+    kite = KiteConnect(api_key=acc["api_key"])
+    data = kite.generate_session(request_token=request_token, api_secret=acc["api_secret"])
+    acc["access_token"] = data["access_token"]
+    save_config(config)
+    return redirect("/dashboard")
+
+# ------------------- End Kite Login Flow -------------------
+
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

@@ -1,5 +1,5 @@
 master:
-  name: 
+  name: BL1330
   api_key: sa1t1c8gddb98915
   api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
   access_token: ""  # Keep blank if using TOTP login
