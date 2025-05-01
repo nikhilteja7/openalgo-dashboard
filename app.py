@@ -208,7 +208,7 @@ def kite_callback():
 
         print("🔑 Using API Key:", acc["api_key"])
         kite = KiteConnect(api_key=acc["api_key"])
-        data = kite.generate_session(request_token=request_token, api_secret=acc["api_secret"])
+        data = kite.generate_session(request_token, acc["api_secret"])
 
         acc["access_token"] = data["access_token"]
         save_config(config)
