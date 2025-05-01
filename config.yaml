@@ -1,8 +1,8 @@
 master:
-  name: master
+  name: ZS1234
   api_key: sa1t1c8gddb98915
   api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
-  access_token: ''
+  access_token: ""
   enabled: true
   multiplier: 1.0
 
@@ -11,52 +11,10 @@ stoploss_percent: 5
 target_percent: 10
 trail_sl_percent: 5
 
-child_accounts:
-  - name: child1
-    api_key: your_child1_api_key
-    access_token: ''
-    api_secret: your_child1_api_secret
-    enabled: true
-    multiplier: 1.0
+copy_trading: true
+trading_enabled: true
 
-  - name: child2
-    api_key: your_child2_api_key
-    access_token: ''
-    api_secret: your_child2_api_secret
-    enabled: true
-    multiplier: 1.0
+child_accounts: []
 
-  - name: child3
-    api_key: your_child3_api_key
-    access_token: ''
-    api_secret: your_child3_api_secret
-    enabled: true
-    multiplier: 1.0
 
-  - name: child4
-    api_key: your_child4_api_key
-    access_token: ''
-    api_secret: your_child4_api_secret
-    enabled: true
-    multiplier: 1.0
 
-  - name: child5
-    api_key: your_child5_api_key
-    access_token: ''
-    api_secret: your_child5_api_secret
-    enabled: true
-    multiplier: 1.0
-
-  - name: child6
-    api_key: your_child6_api_key
-    access_token: ''
-    api_secret: your_child6_api_secret
-    enabled: true
-    multiplier: 1.0
-
-  - name: child7
-    api_key: your_child7_api_key
-    access_token: ''
-    api_secret: your_child7_api_secret
-    enabled: true
-    multiplier: 1.0

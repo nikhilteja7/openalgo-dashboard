@@ -1,232 +1,236 @@
+<!-- Save as templates/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>OpenAlgo Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <style>
-    body { display: flex; margin: 0; font-family: Arial; background-color: #f0f2f5; }
-    aside { width: 220px; background-color: #1c1c1c; color: white; height: 100vh; padding-top: 20px; position: fixed; }
-    aside h2 { text-align: center; color: #61dafb; }
+    body { font-family: Arial; margin: 0; background: #f0f2f5; }
+    aside { width: 220px; background: #1c1c1c; color: white; height: 100vh; position: fixed; }
+    aside h2 { text-align: center; padding: 15px 0; color: #61dafb; }
     aside ul { list-style: none; padding: 0; }
-    aside li { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #444; }
-    aside li:hover { background-color: #333; }
-    main { margin-left: 220px; padding: 20px; flex-grow: 1; }
-    section { display: none; }
-    section.active { display: block; }
-    .status-box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    .status-box h3 { margin-top: 0; }
-    .btn { background: #007BFF; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+    aside li { padding: 15px 20px; border-bottom: 1px solid #333; cursor: pointer; }
+    aside li:hover, aside li.active { background: #333; }
+    header { position: fixed; top: 0; left: 220px; right: 0; background: #fff; padding: 10px 20px; display: flex; justify-content: flex-end; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    header select { padding: 6px; }
+    main { margin-left: 220px; padding: 80px 20px 20px; }
+    .section { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: none; }
+    .section.active { display: block; }
+    .btn { padding: 6px 12px; background: #007BFF; color: white; border: none; border-radius: 4px; margin: 4px; cursor: pointer; }
     .btn:hover { background: #0056b3; }
-    select, input { margin-top: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #007BFF; color: white; }
-    .live-orders { font-size: 14px; margin-top: 5px; color: #555; }
-    #toast {
-      visibility: hidden;
-      min-width: 250px;
-      background-color: #28a745;
-      color: #fff;
-      text-align: center;
-      border-radius: 5px;
-      padding: 16px;
-      position: fixed;
-      z-index: 1;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 17px;
-    }
+    input, select { margin: 5px 0; padding: 6px; width: 220px; }
+    .card { background: #f9f9f9; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; }
+    .green { color: green; }
+    .red { color: red; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 12px 20px; border-radius: 6px; display: none; z-index: 1000; }
   </style>
 </head>
 <body>
-  <aside>
-    <h2>OpenAlgo</h2>
-    <ul>
-      <li onclick="showTab('accounts')"><i class="fa-solid fa-user-plus"></i> Account Configuration</li>
-      <li onclick="showTab('copy')"><i class="fa-solid fa-repeat"></i> Copy Trading</li>
-      <li onclick="showTab('broker-login')"><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</li>
-      <li onclick="showTab('manual-order')"><i class="fa-solid fa-bolt"></i> Manual Order</li>
-      <li onclick="showTab('auto-exit')"><i class="fa-solid fa-ban"></i> Auto Exit</li>
-      <li onclick="showTab('telegram')"><i class="fa-solid fa-envelope"></i> Telegram</li>
-      <li onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
-    </ul>
-  </aside>
-  <main>
-    <!-- Account Configuration Section -->
-    <section id="accounts" class="status-box active">
-      <h3><i class="fa-solid fa-user-plus"></i> Add New Account</h3>
-      <label>Select Account:</label><br>
-      <select id="summaryAccountDropdown" onchange="fetchPortfolioSummary()">
-        <option value="master">Master</option>
-      </select><br><br>
-      <label>Portfolio Balance:</label><br><input type="text" id="portfolioBalance" readonly><br><br>
-      <label>Total Holdings Value:</label><br><input type="text" id="holdingsValue" readonly><br><br>
-      <label>Total P&L:</label><br><input type="text" id="totalPnL" readonly><br><br>
-      <label>Client ID:</label><br><input type="text" id="clientId"><br>
-      <label>API Key:</label><br><input type="text" id="apiKey"><br>
-      <label>Secret Key:</label><br><input type="text" id="secretKey"><br>
-      <label>TOTP Key:</label><br><input type="text" id="totpKey"><br>
-      <label>Email ID:</label><br><input type="text" id="emailId"><br>
-      <label>Mobile No:</label><br><input type="text" id="mobileNo"><br><br>
-      <button class="btn" onclick="addAccount()">Add Account</button>
-    </section>
 
-    <!-- Copy Trading Section -->
-    <section id="copy" class="status-box">
-      <h3><i class="fa-solid fa-repeat"></i> Copy Trading Overview</h3>
-      <label><input type="checkbox"> Enable Copy Trading</label><br><br>
-      <button class="btn">Turn On All Child</button>
-      <button class="btn">Exit All Children</button>
-      <button class="btn">Change Master</button>
-      <button class="btn">Add Child</button>
-      <table>
-        <thead>
-          <tr>
-            <th>Client ID</th><th>Auto Login</th><th>Live Balance</th><th>Multiplier</th>
-            <th>Trade</th><th>Console</th><th>Exit</th><th>Last Order</th><th>PnL</th><th>Net Pos.</th>
-          </tr>
-        </thead>
-        <tbody id="accountTable"></tbody>
-      </table>
-    </section>
+<aside>
+  <h2>OpenAlgo</h2>
+  <ul>
+    <li onclick="showTab('accountConfig')" class="active">Account Configuration</li>
+    <li onclick="showTab('copyTrading')">Copy Trading</li>
+  </ul>
+</aside>
 
-    <!-- Manual Order Panel -->
-    <section id="manual-order" class="status-box">
-      <h3><i class="fa-solid fa-bolt"></i> Manual Order Panel</h3>
-      <label>Order Type:</label><br><select id="orderType"><option value="BUY">BUY</option><option value="SELL">SELL</option></select><br>
-      <label>Symbol:</label><br><input type="text" id="orderSymbol"><br>
-      <label>Quantity:</label><br><input type="number" id="orderQty"><br>
-      <label>Account:</label><br><select id="accountType"><option value="master">Master</option></select><br><br>
-      <button class="btn" onclick="submitManualOrder()">Submit Order</button>
-      <div class="live-orders" id="orderStatus"></div>
-    </section>
+<header>
+  <select onchange="handleDropdown(this.value)">
+    <option hidden selected>⋮</option>
+    <option>User Dashboard</option>
+    <option>Security Settings</option>
+    <option>Logout</option>
+  </select>
+</header>
 
-    <!-- Auto Exit Section -->
-    <section id="auto-exit" class="status-box">
-      <h3><i class="fa-solid fa-ban"></i> Auto Exit</h3>
-      <button class="btn" onclick="triggerAutoExit('master')">Exit Master</button>
-      <button class="btn" onclick="triggerAutoExit('children')">Exit All Children</button>
-      <div class="live-orders" id="exitStatus"></div>
-    </section>
+<main>
+  <!-- ACCOUNT CONFIGURATION -->
+  <div id="accountConfig" class="section active">
+    <h3>➕ Add Zerodha Account</h3>
+    <input id="clientId" placeholder="Client ID (unique)" />
+    <input id="apiKey" placeholder="API Key" />
+    <input id="apiSecret" placeholder="API Secret" />
+    <input id="totpKey" placeholder="TOTP Key" />
+    <input id="emailId" placeholder="Email (optional)" />
+    <input id="mobileNo" placeholder="Mobile (optional)" />
+    <button class="btn" onclick="addAccount()">Add Account</button>
 
-    <!-- Broker Login Section -->
-    <section id="broker-login" class="status-box">
-      <h3><i class="fa-solid fa-plug-circle-bolt"></i> Broker Login</h3>
-      <label>Account:</label><br><select id="accountSelect"><option value="master">Master</option></select><br><br>
-      <label>Broker:</label><br><select id="brokerSelect"><option value="zerodha">Zerodha</option></select><br><br>
-      <button class="btn" onclick="handleBrokerLogin()">Login</button>
-      <div id="loginStatus" class="live-orders"></div>
-    </section>
-  </main>
+    <h4>✅ Successful Logins</h4>
+    <div id="successAccounts"></div>
 
-  <div id="toast">Login successful!</div>
+    <h4>❌ Failed Logins</h4>
+    <div id="failedAccounts"></div>
+  </div>
 
-  <script>
-    const socket = io();
+  <!-- COPY TRADING -->
+  <div id="copyTrading" class="section">
+    <h3>📋 Copy Trading Panel</h3>
+    <div id="masterCard" class="card"></div>
+    <div id="childAccountsContainer"></div>
+  </div>
+</main>
 
-    function showTab(id) {
-      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+<div id="toast">Toast here</div>
 
-    function confirmLogout() {
-      if (confirm("Are you sure you want to logout?")) window.location.href = "/logout";
-    }
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('aside li').forEach(el => el.classList.remove('active'));
+  document.querySelector(`aside li[onclick="showTab('${id}')"]`).classList.add('active');
+  if (id === 'copyTrading') loadCopyTrading();
+}
 
-    function handleBrokerLogin() {
-      const broker = document.getElementById('brokerSelect').value;
-      const account = document.getElementById('accountSelect').value;
-      fetch(`/login/${broker}?account=${account}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.url) window.open(data.url, '_blank');
-          document.getElementById('loginStatus').innerText = data.message;
-        }).catch(() => {
-          document.getElementById('loginStatus').innerText = "Login Failed";
-        });
-    }
+function handleDropdown(option) {
+  if (option === "Logout") window.location.href = "/logout";
+  else alert(`${option} clicked`);
+}
 
-    function fetchPortfolioSummary() {
-      const acc = document.getElementById("summaryAccountDropdown")?.value || "master";
-      fetch("/get-portfolio-summary?account=" + acc)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("portfolioBalance").value = "₹ " + data.balance;
-          document.getElementById("holdingsValue").value = "₹ " + data.holdings_value;
-          document.getElementById("totalPnL").value = "₹ " + data.total_pnl;
-        });
-    }
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.innerText = msg;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 3000);
+}
 
-    function addAccount() {
-      fetch('/add-account', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: document.getElementById("clientId").value,
-          api_key: document.getElementById("apiKey").value,
-          api_secret: document.getElementById("secretKey").value,
-          totp_key: document.getElementById("totpKey").value,
-          email: document.getElementById("emailId").value,
-          mobile: document.getElementById("mobileNo").value
-        })
-      }).then(res => res.json())
-        .then(data => { alert(data.message || "Added"); location.reload(); })
-        .catch(() => alert("Failed to add account"));
-    }
+function addAccount() {
+  const name = document.getElementById('clientId').value.trim();
+  const api_key = document.getElementById('apiKey').value.trim();
+  const api_secret = document.getElementById('apiSecret').value.trim();
 
-    function submitManualOrder() {
-      const data = {
-        symbol: document.getElementById('orderSymbol').value,
-        qty: parseInt(document.getElementById('orderQty').value),
-        side: document.getElementById('orderType').value,
-        account: document.getElementById('accountType').value
-      };
-      fetch('/manual-order', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      }).then(r => r.json()).then(d => {
-        document.getElementById('orderStatus').innerText = d.message || "Order Placed";
-      }).catch(() => {
-        document.getElementById('orderStatus').innerText = "Order Failed";
+  if (!name || !api_key || !api_secret) return alert("Required fields missing");
+
+  fetch('/add-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name, api_key, api_secret,
+      totp_key: document.getElementById('totpKey').value.trim(),
+      email: document.getElementById('emailId').value.trim(),
+      mobile: document.getElementById('mobileNo').value.trim()
+    })
+  }).then(res => res.json()).then(d => {
+    showToast(d.message);
+    loadAccounts();
+  });
+}
+
+function loadAccounts() {
+  fetch('/get-accounts-details')
+    .then(res => res.json())
+    .then(data => {
+      const success = document.getElementById('successAccounts');
+      const failed = document.getElementById('failedAccounts');
+      success.innerHTML = '';
+      failed.innerHTML = '';
+
+      data.accounts.forEach(acc => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const pnlColor = acc.pnl >= 0 ? 'green' : 'red';
+        card.innerHTML = `
+          <b>${acc.name}</b> | Status: ${acc.status ? '✅' : '❌'}
+          | Balance: ₹${acc.balance || '—'}
+          | PnL: <span class="${pnlColor}">₹${acc.pnl || 0}</span>
+          | AutoLogin: <input type="checkbox" ${acc.autologin ? 'checked' : ''} onchange="toggleAutoLogin('${acc.name}', this.checked)">
+          <br/>
+          <button class="btn" onclick="refreshSession('${acc.name}')">Reconnect</button>
+          <button class="btn" onclick="editAccount('${acc.name}')">Edit</button>
+          <button class="btn" onclick="deleteAccount('${acc.name}')">Delete</button>`;
+        (acc.status ? success : failed).appendChild(card);
       });
-    }
+    });
+}
 
-    function triggerAutoExit(scope) {
-      fetch(`/auto-exit?scope=${scope}`)
-        .then(res => res.json())
-        .then(data => { document.getElementById('exitStatus').innerText = data.message; })
-        .catch(() => { document.getElementById('exitStatus').innerText = "Exit Failed"; });
-    }
+function toggleAutoLogin(clientId, val) {
+  fetch('/toggle-autologin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, autologin: val })
+  });
+}
 
-    window.onload = function () {
-      showTab("accounts");
-      fetchPortfolioSummary();
-      fetch('/get-accounts')
-        .then(res => res.json())
-        .then(data => {
-          const brokerDropdown = document.getElementById('accountSelect');
-          const summaryDropdown = document.getElementById('summaryAccountDropdown');
-          const orderDropdown = document.getElementById('accountType');
-          data.child_accounts.forEach(child => {
-            [brokerDropdown, summaryDropdown, orderDropdown].forEach(drop => {
-              const opt = document.createElement("option");
-              opt.value = child; opt.textContent = child;
-              drop.appendChild(opt);
-            });
-          });
-        });
+function refreshSession(clientId) {
+  fetch('/refresh-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId })
+  }).then(res => res.json()).then(d => {
+    showToast(d.message || "Session refreshed");
+    loadAccounts();
+  });
+}
 
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("login") === "success" && params.get("account")) {
-        document.getElementById("toast").innerText = "Login successful for " + params.get("account");
-        document.getElementById("toast").style.visibility = "visible";
-        setTimeout(() => { document.getElementById("toast").style.visibility = "hidden"; }, 3000);
-      }
-    };
-  </script>
+function deleteAccount(clientId) {
+  if (!confirm(`Delete ${clientId}?`)) return;
+  fetch('/delete-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId })
+  }).then(res => res.json()).then(d => {
+    showToast(d.message || "Account deleted");
+    loadAccounts();
+  });
+}
+
+// COPY TRADING SECTION
+function loadCopyTrading() {
+  fetch('/accounts').then(res => res.json()).then(data => {
+    const master = data.find(a => a.is_master);
+    const children = data.filter(a => !a.is_master);
+    const pnlColor = master.pnl >= 0 ? 'green' : 'red';
+
+    document.getElementById('masterCard').innerHTML = `
+      <b>Master: ${master.name}</b> | Copy:
+      <input type="checkbox" ${master.copy_enabled ? 'checked' : ''} onchange="toggleMasterCopy(this.checked)">
+      | Balance: ₹${master.balance} | PnL: <span class="${pnlColor}">₹${master.pnl}</span>
+      <br/>
+      <button class="btn" onclick="console.log('Orderbook')">Orderbook</button>
+      <button class="btn" onclick="console.log('Positions')">Positions</button>
+      <button class="btn" onclick="console.log('Change Master')">Change Master</button>
+    `;
+
+    const container = document.getElementById('childAccountsContainer');
+    container.innerHTML = '';
+    children.forEach(acc => {
+      const pnlColor = acc.pnl >= 0 ? 'green' : 'red';
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <b>Child: ${acc.name}</b> | AutoLogin:
+        <input type="checkbox" ${acc.autologin ? 'checked' : ''} onchange="toggleAutoLogin('${acc.name}', this.checked)">
+        | Balance: ₹${acc.balance} | PnL: <span class="${pnlColor}">₹${acc.pnl}</span>
+        | Multiplier: <input type="number" value="${acc.multiplier}" step="0.1" onchange="updateMultiplier('${acc.name}', this.value)">
+        | Copy: <input type="checkbox" ${acc.copy_enabled ? 'checked' : ''} onchange="toggleCopy('${acc.name}', this.checked)">
+        <br/>
+        <button class="btn" onclick="console.log('Exit')">Exit</button>
+        <button class="btn" onclick="editAccount('${acc.name}')">Edit</button>
+        <button class="btn" onclick="deleteAccount('${acc.name}')">Delete</button>`;
+      container.appendChild(div);
+    });
+  });
+}
+
+function toggleMasterCopy(val) {
+  fetch('/toggle-master-copy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: val })
+  });
+}
+
+function updateMultiplier(clientId, val) {
+  fetch('/update-multiplier', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, multiplier: parseFloat(val) })
+  });
+}
+
+window.onload = loadAccounts;
+</script>
+
 </body>
 </html>
