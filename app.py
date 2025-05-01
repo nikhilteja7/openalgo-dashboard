@@ -169,7 +169,7 @@ def refresh_session():
     result = refresh_tokens_from_totp()
     return jsonify(result)
 
-# ------------------- ✅ Kite Login Flow via Request Token -------------------
+# ------------------- ✅ Kite Login Flow -------------------
 
 @app.route("/login-kite/<client_id>")
 def login_kite(client_id):
@@ -177,8 +177,10 @@ def login_kite(client_id):
     all_accounts = [config["master"]] + config["child_accounts"]
     acc = next((a for a in all_accounts if a["name"] == client_id), None)
     if not acc:
+        print(f"[ERROR] Account '{client_id}' not found")
         return "Account not found", 404
 
+    print("🔑 Found account, redirecting to Kite login.")
     kite = KiteConnect(api_key=acc["api_key"])
     login_url = kite.login_url()
     session["client_id"] = client_id
@@ -186,22 +188,37 @@ def login_kite(client_id):
 
 @app.route("/kite/callback")
 def kite_callback():
-    request_token = request.args.get("request_token")
-    client_id = session.get("client_id")
-    if not request_token or not client_id:
-        return "Invalid session", 400
+    try:
+        request_token = request.args.get("request_token")
+        client_id = session.get("client_id")
 
-    config = load_config()
-    all_accounts = [config["master"]] + config["child_accounts"]
-    acc = next((a for a in all_accounts if a["name"] == client_id), None)
-    if not acc:
-        return "Account not found", 404
+        print("✅ Request token:", request_token)
+        print("✅ Client ID from session:", client_id)
 
-    kite = KiteConnect(api_key=acc["api_key"])
-    data = kite.generate_session(request_token=request_token, api_secret=acc["api_secret"])
-    acc["access_token"] = data["access_token"]
-    save_config(config)
-    return redirect("/dashboard")
+        if not request_token or not client_id:
+            return "Invalid session or missing request token", 400
+
+        config = load_config()
+        all_accounts = [config["master"]] + config["child_accounts"]
+        acc = next((a for a in all_accounts if a["name"] == client_id), None)
+
+        if not acc:
+            print(f"❌ Account {client_id} not found in config.yaml")
+            return "Account not found", 404
+
+        print("🔑 Using API Key:", acc["api_key"])
+        kite = KiteConnect(api_key=acc["api_key"])
+        data = kite.generate_session(request_token=request_token, api_secret=acc["api_secret"])
+
+        acc["access_token"] = data["access_token"]
+        save_config(config)
+
+        print("✅ Access token saved successfully.")
+        return redirect("/dashboard")
+
+    except Exception as e:
+        print("[🔥 ERROR in /kite/callback]:", str(e))
+        return "Internal Server Error during callback", 500
 
 # ------------------- End Kite Login Flow -------------------
 
