@@ -1,4 +1,4 @@
-<!-- Save as templates/dashboard.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,231 +6,322 @@
   <title>OpenAlgo Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    body { font-family: Arial; margin: 0; background: #f0f2f5; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f0f2f5; }
     aside { width: 220px; background: #1c1c1c; color: white; height: 100vh; position: fixed; }
     aside h2 { text-align: center; padding: 15px 0; color: #61dafb; }
     aside ul { list-style: none; padding: 0; }
     aside li { padding: 15px 20px; border-bottom: 1px solid #333; cursor: pointer; }
     aside li:hover, aside li.active { background: #333; }
-    header { position: fixed; top: 0; left: 220px; right: 0; background: #fff; padding: 10px 20px; display: flex; justify-content: flex-end; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    header select { padding: 6px; }
-    main { margin-left: 220px; padding: 80px 20px 20px; }
-    .section { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: none; }
-    .section.active { display: block; }
-    .btn { padding: 6px 12px; background: #007BFF; color: white; border: none; border-radius: 4px; margin: 4px; cursor: pointer; }
+    header {
+      position: fixed; top: 0; left: 220px; right: 0;
+      background: #fff; padding: 10px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100;
+    }
+    main { margin-left: 220px; padding: 80px 20px 40px; }
+    .section { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .btn { padding: 6px 12px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
     .btn:hover { background: #0056b3; }
-    input, select { margin: 5px 0; padding: 6px; width: 220px; }
-    .card { background: #f9f9f9; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; }
+    input, select, textarea { padding: 8px; margin: 8px 0; width: 100%; max-width: 400px; display: block; }
+    .toggle { transform: scale(1.3); margin: 0 8px; vertical-align: middle; }
+    .card { padding: 10px; margin-bottom: 10px; background: #fafafa; border: 1px solid #ccc; border-radius: 8px; }
     .green { color: green; }
     .red { color: red; }
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 12px 20px; border-radius: 6px; display: none; z-index: 1000; }
+    #toast {
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%); background: #28a745;
+      color: #fff; padding: 10px 20px; border-radius: 6px;
+      display: none; z-index: 999;
+    }
   </style>
 </head>
 <body>
-
 <aside>
   <h2>OpenAlgo</h2>
   <ul>
     <li onclick="showTab('accountConfig')" class="active">Account Configuration</li>
     <li onclick="showTab('copyTrading')">Copy Trading</li>
-  </ul>
+  <li onclick="showTab('tradeSummary')">Trade Summary</li></ul>
 </aside>
 
 <header>
-  <select onchange="handleDropdown(this.value)">
-    <option hidden selected>⋮</option>
-    <option>User Dashboard</option>
-    <option>Security Settings</option>
-    <option>Logout</option>
-  </select>
+  <div>
+    <label>🌗 Dark Mode <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()"></label>
+  </div>
+  <div style="position: relative;">
+    <button onclick="toggleUserMenu()">👤 ▾</button>
+    <div id="userMenu" style="display:none; position:absolute; right:0; background:white; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.2); z-index:999;">
+      <a href="/dashboard">User Dashboard</a>
+      <a href="/security">Security Settings</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </div>
 </header>
 
 <main>
-  <!-- ACCOUNT CONFIGURATION -->
-  <div id="accountConfig" class="section active">
-    <h3>➕ Add Zerodha Account</h3>
-    <input id="clientId" placeholder="Client ID (unique)" />
-    <input id="apiKey" placeholder="API Key" />
-    <input id="apiSecret" placeholder="API Secret" />
-    <input id="totpKey" placeholder="TOTP Key" />
-    <input id="emailId" placeholder="Email (optional)" />
-    <input id="mobileNo" placeholder="Mobile (optional)" />
-    <button class="btn" onclick="addAccount()">Add Account</button>
+  <!-- Account Configuration -->
+<div class="section" id="accountConfig">
+  <h3>➕ Add Zerodha Account</h3>
 
-    <h4>✅ Successful Logins</h4>
-    <div id="successAccounts"></div>
+<form onsubmit="addAccount(); return false;" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+  <input id="clientId" placeholder="Client ID" required style="width: 140px;" />
+  <input id="apiKey" placeholder="API Key" required style="width: 140px;" />
+  <input id="apiSecret" placeholder="API Secret" required style="width: 140px;" />
+  <input id="totpKey" placeholder="TOTP Key" required style="width: 140px;" />
+  <input id="emailId" placeholder="Email (optional)" style="width: 160px;" />
+  <input id="mobileNo" placeholder="Mobile (optional)" style="width: 140px;" />
+  <button class="btn" type="submit">Add</button>
+</form>
 
-    <h4>❌ Failed Logins</h4>
+  <h4 style="margin-top: 20px;">📋 Added Accounts</h4>
+  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Client ID</th>
+        <th>Opening Balance</th>
+        <th>Auto-Login</th>
+        <th>Last Login</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="addedAccountsTable">
+      <tr>
+        <td>Z123456</td>
+        <td>₹1,00,000</td>
+        <td><input type="checkbox" checked /></td>
+        <td>2025-05-01 08:45</td>
+        <td>
+          <button class="btn">Reconnect</button>
+          <button class="btn">Edit</button>
+          <button class="btn">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div id="successAccounts"></div>
     <div id="failedAccounts"></div>
   </div>
 
-  <!-- COPY TRADING -->
-  <div id="copyTrading" class="section">
-    <h3>📋 Copy Trading Panel</h3>
-    <div id="masterCard" class="card"></div>
-    <div id="childAccountsContainer"></div>
-  </div>
-</main>
+<!-- Enhanced Master + Child Copy Trading Panel -->
+<div class="section" id="copyTrading" style="display:none;">
+  <h3>📋 Copy Trading Panel</h3>
 
-<div id="toast">Toast here</div>
+  <!-- Master Account -->
+  
+  <div class="card" id="masterCard" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
+    <div><strong>Client ID:</strong> <span id="masterClientId">ZMASTER123</span></div>
+    <div>AutoLogin: <input type="checkbox" onchange="toggleMasterAutoLogin(this.checked)"></div>
+    <div>Balance: ₹<span id="masterBalance">75,000</span></div>
+    <div>Multiplier:
+      <select onchange="setMasterMultiplier(this.value)">
+<option value="0.5">0.5x</option>
+<option value="1">1x</option>
+<option value="2">2x</option>
+<option value="3">3x</option>
+<option value="4">4x</option>
+<option value="5">5x</option>
+<option value="6">6x</option>
+<option value="7">7x</option>
+<option value="8">8x</option>
+<option value="9">9x</option>
+<option value="10">10x</option>
+</select>
+    </div>
+    <div>Copy: <input type="checkbox" onchange="toggleMasterCopy(this.checked)"></div>
+    <div>All Child: <input type="checkbox" onchange="toggleAllChildCopy(this.checked)"></div>
+    <div>P&L: <span id="masterPnL" class="green">+₹1,200</span></div>
+    <div>Net P&L: <span id="masterNetPnL" class="green">+₹2,500</span></div>
+    <div>
+      <button class="btn" onclick="showConsoleTab('master','orderbook')">Order Book</button>
+      <button class="btn" onclick="showConsoleTab('master','positions')">Positions</button>
+    </div>
+    <div>
+      <button class="btn" onclick="exitMaster()">Exit</button>
+      <button class="btn" onclick="editMaster()">Edit</button>
+      <button class="btn" onclick="deleteMaster()">Delete</button>
+    </div>
+    <div style="flex-basis: 100%; margin-top: 10px;">
+      <div id="master_orderbook" class="console-tab" style="display:none;">
+        <textarea style="width:100%; height:100px;" readonly>Order Book will load here...</textarea>
+      </div>
+      <div id="master_positions" class="console-tab" style="display:none;">
+        <textarea style="width:100%; height:100px;" readonly>Positions will load here...</textarea>
+      </div>
+    </div>
+  </div>
+  <hr/>
+    
+
+  <!-- Child Accounts -->
+  <h4>Child Accounts</h4>
+  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Client ID</th><th>AutoLogin</th><th>Live Balance</th><th>Multiplier</th>
+        <th>Trade</th><th>Console</th><th>Exit</th><th>P&L</th><th>Net P&L</th><th>Edit/Delete</th>
+      </tr>
+    </thead>
+    <tbody id="childAccountsBody">
+      <tr>
+        <td>ZCHILD001</td>
+        <td><input type="checkbox" onchange="toggleChildAutoLogin('ZCHILD001', this.checked)"></td>
+        <td>₹42,000</td>
+        <td>
+          <select onchange="updateChildMultiplier(this.value)">
+<option value="0.5">0.5x</option>
+<option value="1">1x</option>
+<option value="2">2x</option>
+<option value="3">3x</option>
+<option value="4">4x</option>
+<option value="5">5x</option>
+<option value="6">6x</option>
+<option value="7">7x</option>
+<option value="8">8x</option>
+<option value="9">9x</option>
+<option value="10">10x</option>
+</select>
+        </td>
+        <td><input type="checkbox" checked onchange="toggleChildTrade('ZCHILD001', this.checked)"></td>
+        <td>
+          <button class="btn" onclick="showConsoleTab('ZCHILD001','orderbook')">📒</button>
+          <button class="btn" onclick="showConsoleTab('ZCHILD001','positions')">📈</button>
+        </td>
+        <td><button class="btn" onclick="exitChild('ZCHILD001')">Exit</button></td>
+        <td><span class="green">+₹950</span></td>
+        <td><span class="green">+₹1,850</span></td>
+        <td>
+          <button class="btn" onclick="editChild('ZCHILD001')">Edit</button>
+          <button class="btn" onclick="deleteChild('ZCHILD001')">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="ZCHILD001_orderbook" class="console-tab" style="display:none; margin-top:10px;">
+    <textarea style="width:100%; height:100px;" readonly>Child ZCHILD001 Order Book here...</textarea>
+  </div>
+  <div id="ZCHILD001_positions" class="console-tab" style="display:none; margin-top:10px;">
+    <textarea style="width:100%; height:100px;" readonly>Child ZCHILD001 Positions here...</textarea>
+  </div>
+</div>
 
 <script>
-function showTab(id) {
-  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('aside li').forEach(el => el.classList.remove('active'));
-  document.querySelector(`aside li[onclick="showTab('${id}')"]`).classList.add('active');
-  if (id === 'copyTrading') loadCopyTrading();
+function showConsoleTab(account, tab) {
+  document.querySelectorAll('.console-tab').forEach(el => el.style.display = 'none');
+  const el = document.getElementById(account + "_" + tab);
+  if (el) el.style.display = 'block';
 }
-
-function handleDropdown(option) {
-  if (option === "Logout") window.location.href = "/logout";
-  else alert(`${option} clicked`);
-}
-
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.innerText = msg;
-  toast.style.display = 'block';
-  setTimeout(() => toast.style.display = 'none', 3000);
-}
-
-function addAccount() {
-  const name = document.getElementById('clientId').value.trim();
-  const api_key = document.getElementById('apiKey').value.trim();
-  const api_secret = document.getElementById('apiSecret').value.trim();
-
-  if (!name || !api_key || !api_secret) return alert("Required fields missing");
-
-  fetch('/add-account', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name, api_key, api_secret,
-      totp_key: document.getElementById('totpKey').value.trim(),
-      email: document.getElementById('emailId').value.trim(),
-      mobile: document.getElementById('mobileNo').value.trim()
-    })
-  }).then(res => res.json()).then(d => {
-    showToast(d.message);
-    loadAccounts();
-  });
-}
-
-function loadAccounts() {
-  fetch('/get-accounts-details')
-    .then(res => res.json())
-    .then(data => {
-      const success = document.getElementById('successAccounts');
-      const failed = document.getElementById('failedAccounts');
-      success.innerHTML = '';
-      failed.innerHTML = '';
-
-      data.accounts.forEach(acc => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        const pnlColor = acc.pnl >= 0 ? 'green' : 'red';
-        card.innerHTML = `
-          <b>${acc.name}</b> | Status: ${acc.status ? '✅' : '❌'}
-          | Balance: ₹${acc.balance || '—'}
-          | PnL: <span class="${pnlColor}">₹${acc.pnl || 0}</span>
-          | AutoLogin: <input type="checkbox" ${acc.autologin ? 'checked' : ''} onchange="toggleAutoLogin('${acc.name}', this.checked)">
-          <br/>
-          <button class="btn" onclick="refreshSession('${acc.name}')">Reconnect</button>
-          <button class="btn" onclick="editAccount('${acc.name}')">Edit</button>
-          <button class="btn" onclick="deleteAccount('${acc.name}')">Delete</button>`;
-        (acc.status ? success : failed).appendChild(card);
-      });
-    });
-}
-
-function toggleAutoLogin(clientId, val) {
-  fetch('/toggle-autologin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: clientId, autologin: val })
-  });
-}
-
-function refreshSession(clientId) {
-  fetch('/refresh-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: clientId })
-  }).then(res => res.json()).then(d => {
-    showToast(d.message || "Session refreshed");
-    loadAccounts();
-  });
-}
-
-function deleteAccount(clientId) {
-  if (!confirm(`Delete ${clientId}?`)) return;
-  fetch('/delete-account', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: clientId })
-  }).then(res => res.json()).then(d => {
-    showToast(d.message || "Account deleted");
-    loadAccounts();
-  });
-}
-
-// COPY TRADING SECTION
-function loadCopyTrading() {
-  fetch('/accounts').then(res => res.json()).then(data => {
-    const master = data.find(a => a.is_master);
-    const children = data.filter(a => !a.is_master);
-    const pnlColor = master.pnl >= 0 ? 'green' : 'red';
-
-    document.getElementById('masterCard').innerHTML = `
-      <b>Master: ${master.name}</b> | Copy:
-      <input type="checkbox" ${master.copy_enabled ? 'checked' : ''} onchange="toggleMasterCopy(this.checked)">
-      | Balance: ₹${master.balance} | PnL: <span class="${pnlColor}">₹${master.pnl}</span>
-      <br/>
-      <button class="btn" onclick="console.log('Orderbook')">Orderbook</button>
-      <button class="btn" onclick="console.log('Positions')">Positions</button>
-      <button class="btn" onclick="console.log('Change Master')">Change Master</button>
-    `;
-
-    const container = document.getElementById('childAccountsContainer');
-    container.innerHTML = '';
-    children.forEach(acc => {
-      const pnlColor = acc.pnl >= 0 ? 'green' : 'red';
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <b>Child: ${acc.name}</b> | AutoLogin:
-        <input type="checkbox" ${acc.autologin ? 'checked' : ''} onchange="toggleAutoLogin('${acc.name}', this.checked)">
-        | Balance: ₹${acc.balance} | PnL: <span class="${pnlColor}">₹${acc.pnl}</span>
-        | Multiplier: <input type="number" value="${acc.multiplier}" step="0.1" onchange="updateMultiplier('${acc.name}', this.value)">
-        | Copy: <input type="checkbox" ${acc.copy_enabled ? 'checked' : ''} onchange="toggleCopy('${acc.name}', this.checked)">
-        <br/>
-        <button class="btn" onclick="console.log('Exit')">Exit</button>
-        <button class="btn" onclick="editAccount('${acc.name}')">Edit</button>
-        <button class="btn" onclick="deleteAccount('${acc.name}')">Delete</button>`;
-      container.appendChild(div);
-    });
-  });
-}
-
-function toggleMasterCopy(val) {
-  fetch('/toggle-master-copy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled: val })
-  });
-}
-
-function updateMultiplier(clientId, val) {
-  fetch('/update-multiplier', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: clientId, multiplier: parseFloat(val) })
-  });
-}
-
-window.onload = loadAccounts;
 </script>
 
+<!-- TAB BUTTONS -->
+  <div style="margin-bottom: 10px;">
+    <button class="btn" onclick="showCopyTab('details')">👥 Child Accounts</button>
+    <button class="btn" onclick="showCopyTab('orders')">📋 Order History</button>
+    <button class="btn" onclick="showCopyTab('summary')">📊 Trade Summary</button>
+  </div>
+
+  <!-- TAB 1: CHILD ACCOUNTS -->
+  <div id="copyTabDetails">
+    <h4>👥 Child Accounts</h4>
+    <p>Child account info appears here.</p>
+  </div>
+
+  <!-- TAB 2: ORDER HISTORY -->
+  <div id="copyTabOrders" style="display:none;">
+    <h4>📋 Order History</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th><th>Account</th><th>Timestamp</th><th>Quantity</th><th>Avg Price</th>
+          <th>Action</th><th>Order ID</th><th>Status</th><th>Error</th>
+        </tr>
+      </thead>
+      <tbody id="orderHistoryTableBody">
+        <tr><td colspan="9">No orders yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 3: TRADE SUMMARY -->
+  
+
+<div class="section" id="tradeSummary" style="display:none;">
+  <h3>📊 Trade Summary (Live)</h3>
+  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>Account</th><th>Opening Balance</th><th>Net P&L</th><th>Total Trades</th>
+        <th>Total Volume</th><th>Win</th><th>Loss</th><th>Win Rate (%)</th><th>Top Symbol</th>
+      </tr>
+    </thead>
+    <tbody id="tradeSummaryTableBody">
+      <tr><td colspan="9">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+<script>
+function toggleUserMenu() {
+  const menu = document.getElementById("userMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('aside li').forEach(li => li.classList.remove('active'));
+  document.querySelector(`aside li[onclick="showTab('${id}')"]`).classList.add('active');
+}
+function toggleDarkMode() {
+  const dark = document.getElementById("dark-mode-toggle").checked;
+  document.body.style.background = dark ? "#121212" : "#f0f2f5";
+  document.body.style.color = dark ? "#eee" : "#000";
+  document.querySelectorAll(".section, .card").forEach(el => {
+    el.style.background = dark ? "#1e1e1e" : "#fff";
+    el.style.color = dark ? "#f0f0f0" : "#000";
+  });
+  document.querySelector("aside").style.background = dark ? "#000" : "#1c1c1c";
+}
+</script>
+
+<!-- Floating Buttons -->
+
+
+<script>
+function showCopyTab(tab) {
+  document.getElementById("copyTabDetails").style.display = tab === "details" ? "block" : "none";
+  document.getElementById("copyTabOrders").style.display = tab === "orders" ? "block" : "none";
+  document.getElementById("copyTabSummary").style.display = tab === "summary" ? "block" : "none";
+  if (tab === "summary") loadTradeSummary();
+}
+
+function loadTradeSummary() {
+  fetch('/get-accounts-summary')
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("tradeSummaryTableBody");
+      tbody.innerHTML = "";
+      data.accounts
+        .sort((a, b) => b.net_pnl - a.net_pnl)
+        .forEach(acc => {
+          const tr = document.createElement("tr");
+          const pnlClass = acc.net_pnl >= 0 ? "green" : "red";
+          tr.innerHTML = `
+            <td>${acc.name}</td>
+            <td>₹${acc.opening_balance}</td>
+            <td class="${pnlClass}">₹${acc.net_pnl}</td>
+            <td>${acc.total_trades}</td>
+            <td>${acc.total_volume}</td>
+            <td>${acc.wins}</td>
+            <td>${acc.losses}</td>
+            <td>${acc.win_rate}%</td>
+            <td>${acc.top_symbol}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+    });
+}
+</script>
 </body>
 </html>

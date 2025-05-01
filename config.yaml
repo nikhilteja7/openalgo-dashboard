@@ -2,9 +2,23 @@ master:
   name: ZS1234
   api_key: sa1t1c8gddb98915
   api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
-  access_token: ""
+  access_token: ""  # Keep blank if using TOTP login
+  totp_key: ""       # Optional: required for auto-login
+  email: ""
+  mobile: ""
   enabled: true
   multiplier: 1.0
+
+child_accounts:
+  - name: ZCHILD001
+    api_key: sa1t1c8gddb9xxxxx
+    api_secret: abcdefghijklmnop
+    access_token: ""
+    totp_key: ""
+    email: ""
+    mobile: ""
+    enabled: true
+    multiplier: 1.0
 
 capital_per_trade: 30000
 stoploss_percent: 5
@@ -13,8 +27,3 @@ trail_sl_percent: 5
 
 copy_trading: true
 trading_enabled: true
-
-child_accounts: []
-
-
-
