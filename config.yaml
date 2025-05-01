@@ -1,5 +1,5 @@
 master:
-  name: ZS1234
+  name: 
   api_key: sa1t1c8gddb98915
   api_secret: oy3g5o1h84wlbrz77nmsrgcwrc9vphzh
   access_token: ""  # Keep blank if using TOTP login
@@ -10,9 +10,9 @@ master:
   multiplier: 1.0
 
 child_accounts:
-  - name: ZCHILD001
-    api_key: sa1t1c8gddb9xxxxx
-    api_secret: abcdefghijklmnop
+  - name: 
+    api_key: 
+    api_secret: 
     access_token: ""
     totp_key: ""
     email: ""
