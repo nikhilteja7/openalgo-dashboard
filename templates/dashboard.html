@@ -1,327 +1,148 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>OpenAlgo Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background: #f0f2f5; }
-    aside { width: 220px; background: #1c1c1c; color: white; height: 100vh; position: fixed; }
-    aside h2 { text-align: center; padding: 15px 0; color: #61dafb; }
-    aside ul { list-style: none; padding: 0; }
-    aside li { padding: 15px 20px; border-bottom: 1px solid #333; cursor: pointer; }
-    aside li:hover, aside li.active { background: #333; }
-    header {
-      position: fixed; top: 0; left: 220px; right: 0;
-      background: #fff; padding: 10px 20px;
-      display: flex; justify-content: space-between; align-items: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100;
-    }
-    main { margin-left: 220px; padding: 80px 20px 40px; }
-    .section { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    .btn { padding: 6px 12px; background: #007BFF; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
-    .btn:hover { background: #0056b3; }
-    input, select, textarea { padding: 8px; margin: 8px 0; width: 100%; max-width: 400px; display: block; }
-    .toggle { transform: scale(1.3); margin: 0 8px; vertical-align: middle; }
-    .card { padding: 10px; margin-bottom: 10px; background: #fafafa; border: 1px solid #ccc; border-radius: 8px; }
+    .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin: 10px 0; }
     .green { color: green; }
     .red { color: red; }
-    #toast {
-      position: fixed; bottom: 30px; left: 50%;
-      transform: translateX(-50%); background: #28a745;
-      color: #fff; padding: 10px 20px; border-radius: 6px;
-      display: none; z-index: 999;
-    }
+    .bg-dark { background-color: #121212 !important; }
+    .text-white { color: #f1f1f1 !important; }
+    .table-dark { background-color: #2c2c2c; color: #f1f1f1; }
+    #accounts tr td button { margin-right: 5px; }
+    details[open] > summary::before { content: "▼ "; }
+    details > summary::before { content: "▶ "; }
+    summary { cursor: pointer; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #logoutBtn { background: #dc3545; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
 <body>
-<aside>
-  <h2>OpenAlgo</h2>
-  <ul>
-    <li onclick="showTab('accountConfig')" class="active">Account Configuration</li>
-    <li onclick="showTab('copyTrading')">Copy Trading</li>
-  <li onclick="showTab('tradeSummary')">Trade Summary</li></ul>
-</aside>
+  <header>
+    <label>🌗 Dark Mode <input type="checkbox" id="dark-mode-toggle"></label>
+    <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
+  </header>
 
-<header>
-  <div>
-    <label>🌗 Dark Mode <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()"></label>
-  </div>
-  <div style="position: relative;">
-    <button onclick="toggleUserMenu()">👤 ▾</button>
-    <div id="userMenu" style="display:none; position:absolute; right:0; background:white; border-radius:5px; box-shadow:0 0 5px rgba(0,0,0,0.2); z-index:999;">
-      <a href="/dashboard">User Dashboard</a>
-      <a href="/security">Security Settings</a>
-      <a href="/logout">Logout</a>
-    </div>
-  </div>
-</header>
-
+  <nav style="display: flex; gap: 10px; padding: 10px; background: #ddd;">
+  <button onclick="showTab('accountSection')">Account Configuration</button>
+  <button onclick="showTab('copySection')">Copy Trading</button>
+  <button onclick="showTab('summarySection')">Trade Summary</button>
+  <button onclick="showTab('chartinkSection')">Chartink Triggers</button>
+</nav>
 <main>
-  <!-- Account Configuration -->
-<div class="section" id="accountConfig">
-  <h3>➕ Add Zerodha Account</h3>
-
-<form onsubmit="addAccount(); return false;" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-  <input id="clientId" placeholder="Client ID" required style="width: 140px;" />
-  <input id="apiKey" placeholder="API Key" required style="width: 140px;" />
-  <input id="apiSecret" placeholder="API Secret" required style="width: 140px;" />
-  <input id="totpKey" placeholder="TOTP Key" required style="width: 140px;" />
-  <input id="emailId" placeholder="Email (optional)" style="width: 160px;" />
-  <input id="mobileNo" placeholder="Mobile (optional)" style="width: 140px;" />
-  <button class="btn" type="submit">Add</button>
-</form>
-
-  <h4 style="margin-top: 20px;">📋 Added Accounts</h4>
-  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Client ID</th>
-        <th>Opening Balance</th>
-        <th>Auto-Login</th>
-        <th>Last Login</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="addedAccountsTable">
-      <tr>
-        <td>Z123456</td>
-        <td>₹1,00,000</td>
-        <td><input type="checkbox" checked /></td>
-        <td>2025-05-01 08:45</td>
-        <td>
-          <button class="btn">Reconnect</button>
-          <button class="btn">Edit</button>
-          <button class="btn">Delete</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-<div id="successAccounts"></div>
-    <div id="failedAccounts"></div>
+    <section id="accountSection">
+      <h2>Account Configuration</h2>
+      <button id="sortToggle" onclick="loadAccounts()">Sort by Net P&L</button>
+      <div id="netPnl"></div>
+      <button onclick="toggleAddForm()">➕ Add Account</button>
+<details id="addAccountForm" style="margin: 10px 0;" open>
+  <summary><strong>➕ Fill New Account Details</strong></summary>
+  <div style="margin-top: 10px;">
+    <input id="clientId" placeholder="Client ID" required />
+    <input id="apiKey" placeholder="API Key" required />
+    <input id="apiSecret" placeholder="API Secret" required />
+    <input id="totpKey" placeholder="TOTP Key" required />
+    <input id="emailId" placeholder="Email (optional)" type="email" />
+    <input id="mobileNo" placeholder="Mobile (optional)" type="tel" pattern="[0-9]{10}" />
+    <button onclick="if (!isDuplicateAccount()) addAccount()">Submit</button>
   </div>
+</details>
+<table border="1" width="100%" style="margin-top: 15px; border-collapse: collapse;">
+  <thead>
+    <tr style="background:#eee">
+      <th>Client ID</th>
+      <th>Opening Balance</th>
+      <th>Login Time</th>
+      <th>AutoLogin</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="accounts">
+  </tbody>
+</table>
+    </section>
 
-<!-- Enhanced Master + Child Copy Trading Panel -->
-<div class="section" id="copyTrading" style="display:none;">
-  <h3>📋 Copy Trading Panel</h3>
+    <section id="accountSection">
+      <h2>Copy Trading</h2>
+      <label>Master:</label><select id="masterSelect"></select>
+      <label>Child:</label><select id="childSelect"></select>
+      <div id="masterClientId"></div>
+      <div>Balance: ₹<span id="masterBalance"></span></div>
+      <div>Today's P&L: ₹<span id="masterPnl"></span></div>
+      <div>Net P&L: ₹<span id="masterNetPnl"></span></div>
+      <label>Copy All Child: <input type="checkbox" id="copyAllToggle" onchange="toggleCopyTrading(this.checked)"></label>
+      <div id="masterConsole"></div>
+      <div id="childAccountsContainer"></div>
+    </section>
 
-  <!-- Master Account -->
-  
-  <div class="card" id="masterCard" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
-    <div><strong>Client ID:</strong> <span id="masterClientId">ZMASTER123</span></div>
-    <div>AutoLogin: <input type="checkbox" onchange="toggleMasterAutoLogin(this.checked)"></div>
-    <div>Balance: ₹<span id="masterBalance">75,000</span></div>
-    <div>Multiplier:
-      <select onchange="setMasterMultiplier(this.value)">
-<option value="0.5">0.5x</option>
-<option value="1">1x</option>
-<option value="2">2x</option>
-<option value="3">3x</option>
-<option value="4">4x</option>
-<option value="5">5x</option>
-<option value="6">6x</option>
-<option value="7">7x</option>
-<option value="8">8x</option>
-<option value="9">9x</option>
-<option value="10">10x</option>
-</select>
-    </div>
-    <div>Copy: <input type="checkbox" onchange="toggleMasterCopy(this.checked)"></div>
-    <div>All Child: <input type="checkbox" onchange="toggleAllChildCopy(this.checked)"></div>
-    <div>P&L: <span id="masterPnL" class="green">+₹1,200</span></div>
-    <div>Net P&L: <span id="masterNetPnL" class="green">+₹2,500</span></div>
-    <div>
-      <button class="btn" onclick="showConsoleTab('master','orderbook')">Order Book</button>
-      <button class="btn" onclick="showConsoleTab('master','positions')">Positions</button>
-    </div>
-    <div>
-      <button class="btn" onclick="exitMaster()">Exit</button>
-      <button class="btn" onclick="editMaster()">Edit</button>
-      <button class="btn" onclick="deleteMaster()">Delete</button>
-    </div>
-    <div style="flex-basis: 100%; margin-top: 10px;">
-      <div id="master_orderbook" class="console-tab" style="display:none;">
-        <textarea style="width:100%; height:100px;" readonly>Order Book will load here...</textarea>
+    <section id="accountSection">
+      <h2>📈 Trade Summary</h2>
+      <button onclick="downloadTradeSummaryCSV()">📥 Export CSV</button>
+      <table id="tradeSummaryTable">
+        <thead>
+          <tr>
+            <th data-key="name">Client ID</th>
+            <th data-key="live_balance">Live Balance</th>
+            <th data-key="net_pnl">Net P&L</th>
+            <th data-key="total_trades">Total Trades</th>
+            <th data-key="wins">Wins</th>
+            <th data-key="losses">Losses</th>
+            <th data-key="win_rate">Win Rate %</th>
+            <th data-key="top_symbol">Top Symbol</th>
+          </tr>
+        </thead>
+        <tbody id="tradeSummaryBody"></tbody>
+      </table>
+    </section>
+
+    <section id="accountSection">
+      <h2>📡 Chartink Triggers</h2>
+      <button onclick="loadChartinkLog()">🔄 Refresh</button>
+      <table id="chartinkTable" border="1" width="100%" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Symbol</th>
+            <th>Qty</th>
+            <th>Action</th>
+            <th>Chart</th>
+          </tr>
+        </thead>
+        <tbody id="chartinkBody"></tbody>
+      </table>
+    </section>
+
+    <div id="toast-container"></div>
+  </main>
+
+  <div class="modal" id="chartModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="chartTitle" class="modal-title">📊 Chart</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <iframe id="tvChart" width="100%" height="500" frameborder="0"></iframe>
+        </div>
       </div>
-      <div id="master_positions" class="console-tab" style="display:none;">
-        <textarea style="width:100%; height:100px;" readonly>Positions will load here...</textarea>
-      </div>
     </div>
   </div>
-  <hr/>
-    
-
-  <!-- Child Accounts -->
-  <h4>Child Accounts</h4>
-  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Client ID</th><th>AutoLogin</th><th>Live Balance</th><th>Multiplier</th>
-        <th>Trade</th><th>Console</th><th>Exit</th><th>P&L</th><th>Net P&L</th><th>Edit/Delete</th>
-      </tr>
-    </thead>
-    <tbody id="childAccountsBody">
-      <tr>
-        <td>ZCHILD001</td>
-        <td><input type="checkbox" onchange="toggleChildAutoLogin('ZCHILD001', this.checked)"></td>
-        <td>₹42,000</td>
-        <td>
-          <select onchange="updateChildMultiplier(this.value)">
-<option value="0.5">0.5x</option>
-<option value="1">1x</option>
-<option value="2">2x</option>
-<option value="3">3x</option>
-<option value="4">4x</option>
-<option value="5">5x</option>
-<option value="6">6x</option>
-<option value="7">7x</option>
-<option value="8">8x</option>
-<option value="9">9x</option>
-<option value="10">10x</option>
-</select>
-        </td>
-        <td><input type="checkbox" checked onchange="toggleChildTrade('ZCHILD001', this.checked)"></td>
-        <td>
-          <button class="btn" onclick="showConsoleTab('ZCHILD001','orderbook')">📒</button>
-          <button class="btn" onclick="showConsoleTab('ZCHILD001','positions')">📈</button>
-        </td>
-        <td><button class="btn" onclick="exitChild('ZCHILD001')">Exit</button></td>
-        <td><span class="green">+₹950</span></td>
-        <td><span class="green">+₹1,850</span></td>
-        <td>
-          <button class="btn" onclick="editChild('ZCHILD001')">Edit</button>
-          <button class="btn" onclick="deleteChild('ZCHILD001')">Delete</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div id="ZCHILD001_orderbook" class="console-tab" style="display:none; margin-top:10px;">
-    <textarea style="width:100%; height:100px;" readonly>Child ZCHILD001 Order Book here...</textarea>
-  </div>
-  <div id="ZCHILD001_positions" class="console-tab" style="display:none; margin-top:10px;">
-    <textarea style="width:100%; height:100px;" readonly>Child ZCHILD001 Positions here...</textarea>
-  </div>
-</div>
 
 <script>
-function showConsoleTab(account, tab) {
-  document.querySelectorAll('.console-tab').forEach(el => el.style.display = 'none');
-  const el = document.getElementById(account + "_" + tab);
-  if (el) el.style.display = 'block';
-}
-</script>
-
-<!-- TAB BUTTONS -->
-  <div style="margin-bottom: 10px;">
-    <button class="btn" onclick="showCopyTab('details')">👥 Child Accounts</button>
-    <button class="btn" onclick="showCopyTab('orders')">📋 Order History</button>
-    <button class="btn" onclick="showCopyTab('summary')">📊 Trade Summary</button>
-  </div>
-
-  <!-- TAB 1: CHILD ACCOUNTS -->
-  <div id="copyTabDetails">
-    <h4>👥 Child Accounts</h4>
-    <p>Child account info appears here.</p>
-  </div>
-
-  <!-- TAB 2: ORDER HISTORY -->
-  <div id="copyTabOrders" style="display:none;">
-    <h4>📋 Order History</h4>
-    <table>
-      <thead>
-        <tr>
-          <th>Symbol</th><th>Account</th><th>Timestamp</th><th>Quantity</th><th>Avg Price</th>
-          <th>Action</th><th>Order ID</th><th>Status</th><th>Error</th>
-        </tr>
-      </thead>
-      <tbody id="orderHistoryTableBody">
-        <tr><td colspan="9">No orders yet.</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- TAB 3: TRADE SUMMARY -->
-  
-
-<div class="section" id="tradeSummary" style="display:none;">
-  <h3>📊 Trade Summary (Live)</h3>
-  <table style="width:100%; border-collapse: collapse;" border="1" cellpadding="8">
-    <thead>
-      <tr>
-        <th>Account</th><th>Opening Balance</th><th>Net P&L</th><th>Total Trades</th>
-        <th>Total Volume</th><th>Win</th><th>Loss</th><th>Win Rate (%)</th><th>Top Symbol</th>
-      </tr>
-    </thead>
-    <tbody id="tradeSummaryTableBody">
-      <tr><td colspan="9">Loading...</td></tr>
-    </tbody>
-  </table>
-</div>
-
-</main>
-<script>
-function toggleUserMenu() {
-  const menu = document.getElementById("userMenu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-}
 function showTab(id) {
-  document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
-  document.getElementById(id).style.display = 'block';
-  document.querySelectorAll('aside li').forEach(li => li.classList.remove('active'));
-  document.querySelector(`aside li[onclick="showTab('${id}')"]`).classList.add('active');
-}
-function toggleDarkMode() {
-  const dark = document.getElementById("dark-mode-toggle").checked;
-  document.body.style.background = dark ? "#121212" : "#f0f2f5";
-  document.body.style.color = dark ? "#eee" : "#000";
-  document.querySelectorAll(".section, .card").forEach(el => {
-    el.style.background = dark ? "#1e1e1e" : "#fff";
-    el.style.color = dark ? "#f0f0f0" : "#000";
+  const sections = ['accountSection', 'copySection', 'summarySection', 'chartinkSection'];
+  sections.forEach(sec => {
+    document.getElementById(sec).style.display = (sec === id) ? 'block' : 'none';
   });
-  document.querySelector("aside").style.background = dark ? "#000" : "#1c1c1c";
+  if (id === 'chartinkSection') loadChartinkLog();
 }
 </script>
-
-<!-- Floating Buttons -->
-
-
-<script>
-function showCopyTab(tab) {
-  document.getElementById("copyTabDetails").style.display = tab === "details" ? "block" : "none";
-  document.getElementById("copyTabOrders").style.display = tab === "orders" ? "block" : "none";
-  document.getElementById("copyTabSummary").style.display = tab === "summary" ? "block" : "none";
-  if (tab === "summary") loadTradeSummary();
-}
-
-function loadTradeSummary() {
-  fetch('/get-accounts-summary')
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("tradeSummaryTableBody");
-      tbody.innerHTML = "";
-      data.accounts
-        .sort((a, b) => b.net_pnl - a.net_pnl)
-        .forEach(acc => {
-          const tr = document.createElement("tr");
-          const pnlClass = acc.net_pnl >= 0 ? "green" : "red";
-          tr.innerHTML = `
-            <td>${acc.name}</td>
-            <td>₹${acc.opening_balance}</td>
-            <td class="${pnlClass}">₹${acc.net_pnl}</td>
-            <td>${acc.total_trades}</td>
-            <td>${acc.total_volume}</td>
-            <td>${acc.wins}</td>
-            <td>${acc.losses}</td>
-            <td>${acc.win_rate}%</td>
-            <td>${acc.top_symbol}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-    });
-}
-</script>
+<script src="/static/dashboard.js"></script>
 </body>
 </html>
