@@ -1,3 +1,14 @@
+
+function updateZerodhaLoginLink(master) {
+  if (master && master.api_key) {
+    const loginBtn = document.getElementById("zerodhaLoginBtn");
+    if (loginBtn) {
+      loginBtn.href = `https://kite.zerodha.com/connect/login?v=3&api_key=${master.api_key}`;
+    }
+  }
+}
+
+
 // dashboard.js
 
 // Utility to toggle visibility of the add account form

@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from flask_socketio import SocketIO, emit
-import os, yaml, pyotp
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file
+from flask_socketio import SocketIO
+import os, yaml, pyotp, csv
 from kiteconnect import KiteConnect
 from datetime import datetime
 from pytz import timezone
@@ -31,10 +31,8 @@ def refresh_tokens_from_totp():
                 totp = pyotp.TOTP(acc["totp_key"]).now()
                 data = kite.generate_session(request_token=None, api_secret=acc["api_secret"], skip_login=True, totp=totp)
                 acc["access_token"] = data["access_token"]
-
                 if acc.get("opening_balance", 0) == 0:
                     acc["opening_balance"] = kite.margins("equity")["net"]
-
                 updated = True
             except Exception as e:
                 print(f"[ERROR] Login failed for {acc['name']}: {e}")
@@ -148,6 +146,7 @@ def get_accounts_details():
             kite.set_access_token(acc["access_token"])
             margin = kite.margins("equity")["net"]
             today_pnl = margin - acc.get("opening_balance", 0)
+            acc["balance"] = margin
             accounts.append({
                 "name": acc["name"],
                 "status": True,
@@ -158,7 +157,6 @@ def get_accounts_details():
                 "is_master": acc["name"] == config["master"].get("name")
             })
         except Exception as e:
-            print(f"[ERROR] Fetching details for {acc['name']}: {e}")
             accounts.append({
                 "name": acc["name"],
                 "status": False,
@@ -169,6 +167,7 @@ def get_accounts_details():
                 "is_master": acc["name"] == config["master"].get("name")
             })
     return jsonify({"accounts": accounts})
+
 @app.route("/refresh-session", methods=["POST"])
 def refresh_session():
     data = request.json
@@ -235,34 +234,87 @@ def toggle_child_copy():
 @app.route("/make-master/<client_id>", methods=["POST"])
 def make_master(client_id):
     config = load_config()
-    new_master = next((acc for acc in config["child_accounts"] if acc["name"] == client_id), None)
+    all_masters = [config["master"]] + [acc for acc in config["child_accounts"] if acc.get("role") == "master"]
 
-    if new_master:
-        old_master = config["master"]
-        config["child_accounts"] = [acc for acc in config["child_accounts"] if acc["name"] != client_id]
-        config["child_accounts"].append(old_master)
-        config["master"] = new_master
-        save_config(config)
-        return jsonify({"status": "success", "message": f"{client_id} set as new master."})
+    new_master = next((acc for acc in all_masters if acc["name"] == client_id), None)
+    if not new_master:
+        return jsonify({"status": "error", "message": "Account not found."}), 404
 
-    return jsonify({"status": "error", "message": "Account not found."}), 404
+    config["child_accounts"] = [acc for acc in config["child_accounts"] if acc["name"] != client_id]
+
+    if config.get("master"):
+        current_master = config["master"]
+        current_master["role"] = "master"
+        config["child_accounts"].append(current_master)
+
+    new_master["role"] = "master"
+    config["master"] = new_master
+    save_config(config)
+
+    return jsonify({"status": "success", "message": f"{client_id} is now the active master"})
 
 @app.route("/get-accounts-summary")
 def get_accounts_summary():
     config = load_config()
     summary = []
     for acc in [config["master"]] + config["child_accounts"]:
+        orders = acc.get("orders", [])
+        wins = sum(1 for o in orders if o.get("pnl", 0) > 0)
+        losses = sum(1 for o in orders if o.get("pnl", 0) < 0)
+        win_rate = round(100 * wins / max(len(orders), 1), 2)
         summary.append({
             "name": acc["name"],
-            "live_balance": acc.get("opening_balance", 0),
+            "live_balance": acc.get("balance", 0),
             "net_pnl": round(acc.get("balance", 0) - acc.get("opening_balance", 0), 2),
-            "total_trades": len(acc.get("orders", [])),
-            "wins": sum(1 for o in acc.get("orders", []) if o.get("pnl", 0) > 0),
-            "losses": sum(1 for o in acc.get("orders", []) if o.get("pnl", 0) < 0),
-            "win_rate": round(100 * sum(1 for o in acc.get("orders", []) if o.get("pnl", 0) > 0) / max(len(acc.get("orders", [])), 1), 2),
-            "top_symbol": acc.get("orders", [{}])[0].get("symbol", "-") if acc.get("orders") else "-"
+            "total_trades": len(orders),
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "top_symbol": orders[0]["symbol"] if orders else "-"
         })
     return jsonify({"accounts": summary})
+
+@app.route("/chartink-log")
+def chartink_log():
+    try:
+        with open("trigger_log.csv", "r") as f:
+            lines = f.readlines()[1:]
+        log = []
+        for line in lines[-100:]:
+            timestamp, symbol, qty, action = line.strip().split(",")[:4]
+            log.append({
+                "timestamp": timestamp,
+                "symbol": symbol,
+                "qty": qty,
+                "action": action
+            })
+        return jsonify({"log": log[::-1]})
+    except Exception as e:
+        return jsonify({"log": [], "error": str(e)})
+
+@app.route("/download-summary")
+def download_summary():
+    config = load_config()
+    filename = "trade_summary.csv"
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Client ID", "Live Balance", "Net P&L", "Total Trades", "Wins", "Losses", "Win Rate %", "Top Symbol"])
+        for acc in [config["master"]] + config["child_accounts"]:
+            orders = acc.get("orders", [])
+            wins = sum(1 for o in orders if o.get("pnl", 0) > 0)
+            losses = sum(1 for o in orders if o.get("pnl", 0) < 0)
+            win_rate = round(100 * wins / max(len(orders), 1), 2)
+            writer.writerow([
+                acc["name"],
+                round(acc.get("balance", 0), 2),
+                round(acc.get("balance", 0) - acc.get("opening_balance", 0), 2),
+                len(orders),
+                wins,
+                losses,
+                win_rate,
+                orders[0]["symbol"] if orders else "-"
+            ])
+    return send_file(filename, as_attachment=True)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
