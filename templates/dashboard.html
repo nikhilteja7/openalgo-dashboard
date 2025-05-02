@@ -25,17 +25,30 @@
 <body>
   <header>
     <label>🌗 Dark Mode <input type="checkbox" id="dark-mode-toggle"></label>
-    <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
+    <a id="zerodhaLoginBtn" target="_blank" style="display:inline-block; margin-right: 10px; padding:6px 12px; background:#0a74da; color:white; border-radius:5px; text-decoration:none;">
+  🔐 Login to Zerodha (BL1330)
+</a>
+<button id="logoutBtn" onclick="logout()">🚪 Logout</button>
   </header>
 
-  <nav style="display: flex; gap: 10px; padding: 10px; background: #ddd;">
+  
+<div class="container" style="display:flex; min-height:100vh;">
+  <div class="sidebar" style="width:220px; background:#1c1c1c; color:white;">
+    <img src="/static/logo.png" alt="Logo" style="width: 100%; padding: 10px;">
+    <button class="tab-btn active" onclick="showTab('accountSection', this)">Account Configuration</button>
+    <button class="tab-btn" onclick="showTab('copySection', this)">Copy Trading</button>
+    <button class="tab-btn" onclick="showTab('summarySection', this)">Trade Summary</button>
+    <button class="tab-btn" onclick="showTab('chartinkSection', this)">Chartink Triggers</button>
+  </div>
+  <main style="flex:1; padding:20px;">
+
   <button onclick="showTab('accountSection')">Account Configuration</button>
   <button onclick="showTab('copySection')">Copy Trading</button>
   <button onclick="showTab('summarySection')">Trade Summary</button>
   <button onclick="showTab('chartinkSection')">Chartink Triggers</button>
 </nav>
 <main>
-    <section id="accountSection">
+    <section id="copySection">
       <h2>Account Configuration</h2>
       <button id="sortToggle" onclick="loadAccounts()">Sort by Net P&L</button>
       <div id="netPnl"></div>
@@ -67,7 +80,7 @@
 </table>
     </section>
 
-    <section id="accountSection">
+    <section id="summarySection">
       <h2>Copy Trading</h2>
       <label>Master:</label><select id="masterSelect"></select>
       <label>Child:</label><select id="childSelect"></select>
@@ -80,7 +93,7 @@
       <div id="childAccountsContainer"></div>
     </section>
 
-    <section id="accountSection">
+    <section id="chartinkSection">
       <h2>📈 Trade Summary</h2>
       <button onclick="downloadTradeSummaryCSV()">📥 Export CSV</button>
       <table id="tradeSummaryTable">
@@ -118,7 +131,7 @@
     </section>
 
     <div id="toast-container"></div>
-  </main>
+  </main></div>
 
   <div class="modal" id="chartModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
@@ -135,7 +148,16 @@
   </div>
 
 <script>
-function showTab(id) {
+function showTab(id, btn) {
+  const sections = ['accountSection', 'copySection', 'summarySection', 'chartinkSection'];
+  sections.forEach(sec => {
+    const el = document.getElementById(sec);
+    if (el) el.style.display = (sec === id) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (id === 'chartinkSection' && typeof loadChartinkLog === 'function') loadChartinkLog();
+}
   const sections = ['accountSection', 'copySection', 'summarySection', 'chartinkSection'];
   sections.forEach(sec => {
     document.getElementById(sec).style.display = (sec === id) ? 'block' : 'none';

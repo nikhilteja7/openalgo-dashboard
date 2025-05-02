@@ -544,3 +544,13 @@ function showTab(id) {
   });
   if (id === 'chartinkSection') loadChartinkLog();
 }
+
+function setZerodhaLoginLink() {
+  const apiKey = "sa1t1c8gddb98915";
+  const clientId = "BL1330";
+  const redirectUri = "https://openalgo-dashboard.ontender.com/login-kite/" + clientId;
+  const loginUrl = `https://kite.trade/connect/login?api_key=${apiKey}&v=3&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  const link = document.getElementById("zerodhaLoginBtn");
+  if (link) link.href = loginUrl;
+}
+document.addEventListener("DOMContentLoaded", setZerodhaLoginLink);
