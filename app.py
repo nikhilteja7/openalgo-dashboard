@@ -67,10 +67,13 @@ def dashboard():
 @app.route("/kite/login/<client_id>")
 def kite_login(client_id):
     # Generate the login URL with redirect_params to pass client_id
+    config = load_config()
+    kite = KiteConnect(api_key=config["master"]["api_key"])
     login_url = kite.login_url()
-    # Append client_id as a query parameter
-    login_url_with_client = f"{login_url}&redirect_params=client_id={client_id}"
-    return redirect(login_url_with_client)
+    full_login_url = f"{login_url}&redirect_params=client_id={client_id}"
+    return redirect(full_login_url)
+
+  
 @app.route("/kite/callback")
 def kite_callback():
     request_token = request.args.get("request_token")
