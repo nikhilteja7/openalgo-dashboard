@@ -64,6 +64,25 @@ def dashboard():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
     return render_template("dashboard.html")
+@app.route("/kite/callback")
+def kite_callback():
+    request_token = request.args.get("request_token")
+    client_id = request.args.get("client_id") or "UNKNOWN"
+
+    if not request_token:
+        return "❌ Missing request token", 400
+
+    config = load_config()
+    kite = KiteConnect(api_key=config["master"]["api_key"])
+    try:
+        data = kite.generate_session(request_token, api_secret=config["master"]["api_secret"])
+        config["master"]["access_token"] = data["access_token"]
+        config["master"]["last_login"] = datetime.now(timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
+        config["master"]["opening_balance"] = kite.margins("equity")["net"]
+        save_config(config)
+        return f"✅ Login successful for {client_id}. You can close this window."
+    except Exception as e:
+        return f"❌ Login failed: {str(e)}", 500
 
 @app.route("/add-account", methods=["POST"])
 def add_account():
