@@ -10,6 +10,10 @@ function updateZerodhaLoginLink(master) {
 
 
 // dashboard.js
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get("login") === "success") {
+  showToast("✅ Zerodha login successful", true);
+}
 
 // Utility to toggle visibility of the add account form
 function toggleAddForm() {
