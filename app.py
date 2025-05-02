@@ -66,12 +66,13 @@ def dashboard():
     return render_template("dashboard.html")
 @app.route("/kite/login/<client_id>")
 def kite_login(client_id):
-    # Generate the login URL with redirect_params to pass client_id
     config = load_config()
     kite = KiteConnect(api_key=config["master"]["api_key"])
-    login_url = kite.login_url()
-    full_login_url = f"{login_url}&redirect_params=client_id={client_id}"
-    return redirect(full_login_url)
+
+    redirect_uri = f"https://openalgo-dashboard.onrender.com/kite/callback?client_id={client_id}"
+    login_url = f"https://kite.trade/connect/login?v=3&api_key={config['master']['api_key']}&redirect_uri={redirect_uri}"
+
+    return redirect(login_url)
 
   
 @app.route("/kite/callback")
@@ -79,20 +80,13 @@ def kite_callback():
     request_token = request.args.get("request_token")
     client_id = request.args.get("client_id") or "UNKNOWN"
 
-    if not request_token:
-        return "❌ Missing request token", 400
+@app.route("/kite/callback")
+def kite_callback():
+    request_token = request.args.get("request_token")
+    client_id = request.args.get("client_id") or "UNKNOWN"
 
-    config = load_config()
-    kite = KiteConnect(api_key=config["master"]["api_key"])
-    try:
-        data = kite.generate_session(request_token, api_secret=config["master"]["api_secret"])
-        config["master"]["access_token"] = data["access_token"]
-        config["master"]["last_login"] = datetime.now(timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
-        config["master"]["opening_balance"] = kite.margins("equity")["net"]
-        save_config(config)
-        return f"✅ Login successful for {client_id}. You can close this window."
-    except Exception as e:
-        return f"❌ Login failed: {str(e)}", 500
+    print(f"[DEBUG] request_token: {request_token}")
+    print(f"[DEBUG] client_id: {client_id}")
 
 @app.route("/add-account", methods=["POST"])
 def add_account():
