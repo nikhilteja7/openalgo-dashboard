@@ -10,8 +10,9 @@ app = Flask(__name__)
 app.secret_key = os.getenv("APP_KEY", "supersecretkey")
 socketio = SocketIO(app, async_mode='eventlet')
 
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/openalgo")
 client = MongoClient(mongo_uri)
+
 db = client['openalgo']
 accounts_col = db['accounts']
 settings_col = db['settings']
